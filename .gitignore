@@ -1,0 +1,22 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Personal data — never commit
+cv/
+*cv*.pdf
+*cv*.docx
+candidate-profile.real.*
+data/
+*.csv
+*.xlsx
+
+# n8n local data
+.n8n/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
