@@ -1,0 +1,37 @@
+# n8n plus Gotenberg (HTML -> PDF) for the AI Job-Search Assistant.
+# Start:  docker compose up -d      (run from this folder)
+# PRIVATE_DIR (set in .env) is the folder holding your real about-me.md. Keep it outside the repo.
+name: job-search
+
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.48.5
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5678:5678"   # this PC only, not the local network
+    environment:
+      - TZ=Europe/London
+      - GENERIC_TIMEZONE=Europe/London
+      # The Read Files from Disk node may only read these two read-only folders.
+      - N8N_RESTRICT_FILE_ACCESS_TO=/home/node/cv-private;/home/node/cv-templates
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ${PRIVATE_DIR:-./private}:/home/node/cv-private:ro
+      - ./templates:/home/node/cv-templates:ro
+    depends_on:
+      - gotenberg
+
+  gotenberg:
+    image: gotenberg/gotenberg:8.40.0
+    container_name: gotenberg
+    restart: unless-stopped
+    # No published port: only n8n can reach it, at http://gotenberg:3000
+    command:
+      - gotenberg
+      - --chromium-disable-javascript=true
+      - --api-timeout=60s
+
+volumes:
+  n8n_data:
+    external: true

@@ -24,3 +24,9 @@ Thumbs.db
 # Local notes with keys — never commit
 secret.txt
 *secret*
+
+# Private profile and generated CVs — never commit
+private/
+output/
+*_CV_*.pdf
+about-me.md

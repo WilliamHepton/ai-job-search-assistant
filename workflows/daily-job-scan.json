@@ -16,7 +16,7 @@
     {
       "parameters": {
         "mode": "raw",
-        "jsonOutput": "{\n  \"search_terms\": [\n    \"AI automation\",\n    \"n8n\",\n    \"automation engineer\",\n    \"AI implementation\",\n    \"workflow automation\",\n    \"Power Automate\",\n    \"AI adoption\"\n  ],\n  \"local_area\": \"Malvern\",\n  \"distance_km\": 48,\n  \"results_per_page\": 50,\n  \"max_days_old\": 1,\n  \"exclude_title_patterns\": [\n    \"head of\",\n    \"director\",\n    \"vice president\",\n    \"chief\",\n    \"vp of\"\n  ],\n  \"max_jobs_per_run\": 40,\n  \"model\": \"claude-haiku-5-5\",\n  \"candidate_profile\": \"Software developer, BSc Computing and Software Development (2:1). Based near Malvern, UK;\\nwants remote or hybrid within 30 miles. Skills: C#, .NET, C++, JavaScript, Java, SQL,\\nMongoDB, REST APIs, webhooks, third-party API integration, n8n, LLM APIs (Claude),\\nretrieval-based AI assistants, AI-assisted development (Claude Code). Experience:\\n3 years running an indie game studio (2 commercial releases), voluntary finance and\\noperations director of a small gym (systems, software, finances), built a full gym\\nmanagement platform (app, staff portal, backend) and an AI FAQ assistant. Short junior\\nfull-stack developer roles. Seeking AI automation / implementation roles. Not seeking\\npeople-management or senior leadership roles.\",\n  \"reed_distance_miles\": 30,\n  \"reed_results\": 100,\n  \"reed_max_age_days\": 2\n}",
+        "jsonOutput": "{\n  \"search_terms\": [\n    \"AI automation\",\n    \"automation developer\",\n    \"automation engineer\",\n    \"AI implementation\",\n    \"AI integration engineer\",\n    \"solutions engineer\",\n    \"n8n\",\n    \"Power Automate\",\n    \"AI adoption\"\n  ],\n  \"local_area\": \"Malvern\",\n  \"distance_km\": 48,\n  \"results_per_page\": 50,\n  \"max_days_old\": 1,\n  \"exclude_title_patterns\": [\n    \"head of\",\n    \"director\",\n    \"vice president\",\n    \"chief\",\n    \"vp of\",\n    \"team lead\",\n    \"team leader\",\n    \"change manager\"\n  ],\n  \"max_jobs_per_run\": 40,\n  \"model\": \"claude-haiku-5-5\",\n  \"candidate_profile\": \"Software developer, BSc Computing and Software Development (2:1). Based near Malvern, UK;\\nwants remote or hybrid within 30 miles. Skills: C#, .NET, C++, JavaScript, Java, SQL,\\nMongoDB, REST APIs, webhooks, third-party API integration, n8n, LLM APIs (Claude),\\nretrieval-based AI assistants, AI-assisted development (Claude Code). Experience:\\n3 years running an indie game studio (2 commercial releases), voluntary finance and\\noperations director of a small gym (systems, software, finances), built a full gym\\nmanagement platform (app, staff portal, backend) and an AI FAQ assistant. Short junior\\nfull-stack developer roles. Target roles, in priority order: AI Automation Specialist/Engineer, Automation Developer\\n(n8n, Make, Power Automate), AI Implementation Consultant, Solutions Engineer, AI Integration\\nEngineer; backup: AI Adoption Specialist. Prefers hands-on building and integration work.\\nNot seeking people-management, pure change-management or senior leadership roles.\\nLocation: fully remote (UK) or hybrid within about 30 miles of Malvern.\",\n  \"reed_distance_miles\": 30,\n  \"reed_results\": 100,\n  \"reed_max_age_days\": 2\n}",
         "options": {}
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000002",
@@ -102,7 +102,7 @@
       "type": "n8n-nodes-base.removeDuplicates",
       "typeVersion": 2,
       "position": [
-        1544,
+        1552,
         0
       ]
     },
@@ -125,7 +125,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        1768,
+        1776,
         0
       ],
       "executeOnce": true,
@@ -149,7 +149,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1976,
+        1984,
         0
       ]
     },
@@ -162,7 +162,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2200,
+        2208,
         0
       ]
     },
@@ -175,7 +175,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3304,
+        3312,
         0
       ]
     },
@@ -340,7 +340,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        3528,
+        3536,
         0
       ],
       "retryOnFail": true,
@@ -362,7 +362,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2424,
+        2432,
         0
       ]
     },
@@ -375,7 +375,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2648,
+        2656,
         0
       ]
     },
@@ -412,7 +412,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2856,
+        2864,
         0
       ],
       "retryOnFail": true,
@@ -435,20 +435,20 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3080,
+        3088,
         0
       ]
     },
     {
       "parameters": {
-        "jsCode": "// Build the daily HTML digest: top 5 new jobs scoring >= 60, plus run stats.\nconst jobs = $('Parse score').all().map(i => i.json);\nconst MIN_SCORE = 60, TOP_N = 5;\nconst esc = s => String(s ?? '').replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]));\n\nconst top = jobs\n  .filter(j => Number.isInteger(j.score) && j.score >= MIN_SCORE)\n  .sort((a, b) => b.score - a.score)\n  .slice(0, TOP_N);\n\nconst scored = jobs.filter(j => Number.isInteger(j.score)).length;\nconst failed = jobs.length - scored;\nconst inTok = jobs.reduce((s, j) => s + (j.input_tokens || 0), 0);\nconst outTok = jobs.reduce((s, j) => s + (j.output_tokens || 0), 0);\n// claude-haiku-5-5: $0.10 per 1M input tokens, $0.50 per 1M output tokens.\nconst costUsd = (inTok * 0.10 + outTok * 0.50) / 1e6;\nconst day = $now.setZone('Europe/London').toFormat('ccc d LLL');\n\nconst card = j => `\n  <tr><td style=\"padding:12px 0;border-bottom:1px solid #e5e5e5\">\n    <div style=\"font-size:16px\"><b>${j.score}</b> &middot; ${/^https?:\\/\\//i.test(j.url ?? '') ? `<a href=\"${esc(j.url)}\">${esc(j.title)}</a>` : esc(j.title)}</div>\n    <div style=\"color:#555\">${esc(j.company || 'Company not stated')} &middot; ${esc(j.location)}${j.salary ? ' &middot; ' + esc(j.salary) : ''}</div>\n    <div style=\"margin-top:4px\">${esc(j.reason)}</div>\n    <div style=\"margin-top:4px;color:#2e7d32\">✔ ${esc(j.matched_skills.join(', ') || '–')}</div>\n    <div style=\"color:#c62828\">✘ ${esc(j.missing_skills.join(', ') || '–')}</div>\n  </td></tr>`;\n\nconst body = top.length\n  ? `<table style=\"width:100%;border-collapse:collapse\">${top.map(card).join('')}</table>`\n  : `<p>No new jobs scored ${MIN_SCORE} or more today.</p>`;\n\nconst calls = name => { try { return $(name).all(); } catch (e) { return []; } };\nconst srcNote = [['Adzuna', 'Adzuna search'], ['Reed', 'Reed search']].map(([label, name]) => {\n  const c = calls(name), failedCalls = c.filter(i => i.json.error).length;\n  const n = jobs.filter(j => j.source === label.toLowerCase()).length;\n  return `${label}: ${n} new${failedCalls ? ` (${failedCalls}/${c.length} requests failed)` : ''}`;\n}).join(' · ');\n\nconst html = `<div style=\"font-family:Arial,sans-serif;max-width:640px\">\n  <h2 style=\"margin-bottom:4px\">Job digest – ${esc(day)}</h2>\n  <div style=\"color:#555\">${jobs.length} new jobs · ${scored} scored${failed ? ` · ${failed} failed to score` : ''} · ${top.length} at ${MIN_SCORE}+</div>\n  ${body}\n  <p style=\"color:#888;font-size:12px\">${esc(srcNote)}<br>Tokens: ${inTok} in / ${outTok} out · est. cost $${costUsd.toFixed(4)} · full list in the Job Tracker sheet.</p>\n</div>`;\n\nconst subject = top.length\n  ? `Job digest: ${top.length} match${top.length > 1 ? 'es' : ''} (top ${top[0].score}) – ${day}`\n  : `Job digest: no strong matches – ${day}`;\n\nreturn [{ json: { subject, html, jobs_new: jobs.length, jobs_scored: scored, matches: top.length, input_tokens: inTok, output_tokens: outTok, cost_usd: costUsd } }];"
+        "jsCode": "// Build the daily HTML digest: top 5 new jobs scoring >= 60, plus run stats.\nconst jobs = $('Parse score').all().map(i => i.json);\nconst MIN_SCORE = 60, TOP_N = 5;\nconst esc = s => String(s ?? '').replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]));\n\nconst top = jobs\n  .filter(j => Number.isInteger(j.score) && j.score >= MIN_SCORE)\n  .sort((a, b) => b.score - a.score)\n  .slice(0, TOP_N);\n\nconst scored = jobs.filter(j => Number.isInteger(j.score)).length;\nconst failed = jobs.length - scored;\nconst inTok = jobs.reduce((s, j) => s + (j.input_tokens || 0), 0);\nconst outTok = jobs.reduce((s, j) => s + (j.output_tokens || 0), 0);\n// claude-haiku-5-5: $0.10 per 1M input tokens, $0.50 per 1M output tokens.\nconst costUsd = (inTok * 0.10 + outTok * 0.50) / 1e6;\nconst cvRuns = (() => { try { return $('Generate CVs').all().map(i => i.json).filter(r => r.job_id); } catch (e) { return []; } })();\nconst cvById = Object.fromEntries(cvRuns.map(r => [r.job_id, r]));\nconst cvOk = cvRuns.filter(r => r.cv_ok), cvFailed = cvRuns.length - cvOk.length;\nconst cvOlder = cvOk.filter(r => !jobs.some(j => j.job_id === r.job_id)).length;\nconst cvCost = cvRuns.reduce((s, r) => s + (r.cv_cost_usd || 0), 0);\nconst cvIn = cvRuns.reduce((s, r) => s + (r.cv_input_tokens || 0), 0), cvOut = cvRuns.reduce((s, r) => s + (r.cv_output_tokens || 0), 0);\nconst cvLink = j => /^https:///i.test(cvById[j.job_id]?.cv_link ?? '') ? ` &middot; <a href=\"${esc(cvById[j.job_id].cv_link)}\">Tailored CV</a>` : '';\nconst day = $now.setZone('Europe/London').toFormat('ccc d LLL');\n\nconst card = j => `\n  <tr><td style=\"padding:12px 0;border-bottom:1px solid #e5e5e5\">\n    <div style=\"font-size:16px\"><b>${j.score}</b> &middot; ${/^https?:\\/\\//i.test(j.url ?? '') ? `<a href=\"${esc(j.url)}\">${esc(j.title)}</a>` : esc(j.title)}</div>\n    <div style=\"color:#555\">${esc(j.company || 'Company not stated')} &middot; ${esc(j.location)}${j.salary ? ' &middot; ' + esc(j.salary) : ''}${cvLink(j)}</div>\n    <div style=\"margin-top:4px\">${esc(j.reason)}</div>\n    <div style=\"margin-top:4px;color:#2e7d32\">✔ ${esc(j.matched_skills.join(', ') || '–')}</div>\n    <div style=\"color:#c62828\">✘ ${esc(j.missing_skills.join(', ') || '–')}</div>\n  </td></tr>`;\n\nconst body = top.length\n  ? `<table style=\"width:100%;border-collapse:collapse\">${top.map(card).join('')}</table>`\n  : `<p>No new jobs scored ${MIN_SCORE} or more today.</p>`;\n\nconst calls = name => { try { return $(name).all(); } catch (e) { return []; } };\nconst srcNote = [['Adzuna', 'Adzuna search'], ['Reed', 'Reed search']].map(([label, name]) => {\n  const c = calls(name), failedCalls = c.filter(i => i.json.error).length;\n  const n = jobs.filter(j => j.source === label.toLowerCase()).length;\n  return `${label}: ${n} new${failedCalls ? ` (${failedCalls}/${c.length} requests failed)` : ''}`;\n}).join(' · ');\n\nconst html = `<div style=\"font-family:Arial,sans-serif;max-width:640px\">\n  <h2 style=\"margin-bottom:4px\">Job digest – ${esc(day)}</h2>\n  <div style=\"color:#555\">${jobs.length} new jobs · ${scored} scored${failed ? ` · ${failed} failed to score` : ''} · ${top.length} at ${MIN_SCORE}+</div>\n  ${body}\n  <p style=\"color:#888;font-size:12px\">${esc(srcNote)}<br>Scoring tokens: ${inTok} in / ${outTok} out · est. $${costUsd.toFixed(4)}<br>Tailored CVs: ${cvOk.length} made${cvOlder ? ` (${cvOlder} for earlier jobs)` : ''}${cvFailed ? ` · ${cvFailed} failed (retried next run)` : ''} · ${cvIn} in / ${cvOut} out · est. $${cvCost.toFixed(4)}<br>Total est. cost $${(costUsd + cvCost).toFixed(4)} · full list in the Job Tracker sheet.</p>\n</div>`;\n\nconst subject = top.length\n  ? `Job digest: ${top.length} match${top.length > 1 ? 'es' : ''} (top ${top[0].score}) – ${day}`\n  : `Job digest: no strong matches – ${day}`;\n\nreturn [{ json: { subject, html, jobs_new: jobs.length, jobs_scored: scored, matches: top.length, input_tokens: inTok, output_tokens: outTok, cost_usd: costUsd, cvs_made: cvOk.length, cvs_failed: cvFailed, cv_cost_usd: cvCost } }];"
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000021",
       "name": "Build digest",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3752,
+        4432,
         0
       ],
       "executeOnce": true
@@ -467,7 +467,7 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3976,
+        4656,
         0
       ],
       "webhookId": "a7c1e0d2-5b44-4f1e-9c11-digest000001",
@@ -511,7 +511,7 @@
       "typeVersion": 2,
       "position": [
         448,
-        -260
+        -256
       ]
     },
     {
@@ -537,11 +537,17 @@
       "typeVersion": 4.2,
       "position": [
         656,
-        -260
+        -256
       ],
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 5000,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "cszeqHD7xxyLYzIj",
+          "name": "Reed API"
+        }
+      },
       "onError": "continueRegularOutput"
     },
     {
@@ -554,7 +560,7 @@
       "typeVersion": 2,
       "position": [
         880,
-        -260
+        -256
       ],
       "alwaysOutputData": true
     },
@@ -565,8 +571,8 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        1100,
-        -130
+        1104,
+        -128
       ]
     },
     {
@@ -578,9 +584,147 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1320,
-        -130
+        1328,
+        -128
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Jobs that may need a tailored CV: everything scored this run, plus older sheet rows with\n// no CV yet. \"Generate Tailored CV\" applies the score threshold, age limit and cap.\nconst today = $now.setZone('Europe/London').toFormat('yyyy-MM-dd');\nconst fresh = $('Parse score').all().map(i => ({ ...i.json, date_found: today }));\nconst freshIds = new Set(fresh.map(j => j.job_id));\nconst older = $('Read existing jobs').all().map(i => i.json)\n  .filter(r => r.job_id && !freshIds.has(r.job_id) && !String(r.cv_link ?? '').trim() && Number(r.score) >= 0 && r.score !== '');\nreturn [...fresh, ...older].map(json => ({ json }));"
+      },
+      "id": "7c3e9a10-cv00-4d2b-8e11-000000000028",
+      "name": "CV candidates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3760,
+        0
+      ],
+      "executeOnce": false,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "jobTailoredCv01",
+          "mode": "id",
+          "cachedResultName": "Generate Tailored CV"
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "7c3e9a10-cv00-4d2b-8e11-000000000029",
+      "name": "Generate CVs",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        3984,
+        0
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sheet updates for the CV columns (matched on job_id).\nreturn $('Generate CVs').all().map(i => i.json).filter(r => r.job_id)\n  .map(r => ({ json: { job_id: r.job_id, cv_link: r.cv_link, cv_generated_at: r.cv_generated_at, tailoring_notes: r.tailoring_notes } }));"
+      },
+      "id": "7c3e9a10-cv00-4d2b-8e11-000000000030",
+      "name": "CV sheet rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4208,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Jobs",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "job_id"
+          ],
+          "schema": [
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "cv_link",
+              "displayName": "cv_link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "cv_generated_at",
+              "displayName": "cv_generated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tailoring_notes",
+              "displayName": "tailoring_notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "id": "7c3e9a10-cv00-4d2b-8e11-a00000000003",
+      "name": "Update CV columns",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        4432,
+        -200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8QeZAhAEn9k02vIY",
+          "name": "Google Sheets account"
+        }
+      }
     }
   ],
   "connections": {
@@ -736,7 +880,7 @@
       "main": [
         [
           {
-            "node": "Build digest",
+            "node": "CV candidates",
             "type": "main",
             "index": 0
           }
@@ -825,6 +969,44 @@
         [
           {
             "node": "Remove duplicates in run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CV candidates": {
+      "main": [
+        [
+          {
+            "node": "Generate CVs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate CVs": {
+      "main": [
+        [
+          {
+            "node": "CV sheet rows",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CV sheet rows": {
+      "main": [
+        [
+          {
+            "node": "Update CV columns",
             "type": "main",
             "index": 0
           }

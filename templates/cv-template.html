@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>{{name}} – CV</title>
+<!--
+  CV template for the AI Job-Search Assistant.
+  Placeholders use Mustache syntax:
+    {{field}}          escaped text
+    {{#list}}...{{/list}}  repeat for each item (or show if truthy)
+    {{^list}}...{{/list}}  show if empty/false
+  Data shape: see cv-data.schema in the tailoring prompt.
+  Design: single column, real text (not images), standard headings, so CV-screening software can read it.
+  Print size: A4, aim for 2 pages maximum.
+-->
+<style>
+  @page { size: A4; margin: 14mm 15mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Calibri", "Carlito", "Segoe UI", Arial, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.35;
+    color: #1a1a1a;
+    margin: 0;
+  }
+  header { border-bottom: 2px solid #1f4e79; padding-bottom: 6px; margin-bottom: 10px; }
+  h1 { font-size: 22pt; margin: 0; color: #1f4e79; letter-spacing: 0.5px; }
+  .headline { font-size: 12pt; font-weight: 600; margin: 2px 0 4px; }
+  .contact { font-size: 9.5pt; color: #333; }
+  .contact span + span::before { content: " · "; color: #888; }
+  h2 {
+    font-size: 11.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #1f4e79;
+    border-bottom: 1px solid #c9d6e3;
+    margin: 12px 0 5px;
+    padding-bottom: 2px;
+  }
+  p { margin: 0 0 4px; }
+  ul { margin: 2px 0 6px; padding-left: 16px; }
+  li { margin-bottom: 2px; }
+  .skills li { list-style: none; margin-left: -16px; }
+  .entry { margin-bottom: 7px; page-break-inside: avoid; }
+  .entry-head { display: flex; justify-content: space-between; gap: 8px; }
+  .entry-title { font-weight: 700; }
+  .entry-dates { white-space: nowrap; color: #333; }
+  .entry-sub { font-style: italic; color: #444; font-size: 9.8pt; }
+  a { color: #1f4e79; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>{{name}}</h1>
+  <div class="headline">{{headline}}</div>
+  <div class="contact">
+    <span>{{location}}</span>
+    <span>{{email}}</span>
+    <span>{{phone}}</span>
+    <span>{{linkedin}}</span>
+    <span>{{github}}</span>
+    <span>{{languages}}</span>
+    {{#licence}}<span>{{licence}}</span>{{/licence}}
+  </div>
+</header>
+
+<section>
+  <h2>Profile</h2>
+  <p>{{profile}}</p>
+</section>
+
+<section class="skills">
+  <h2>Key Skills</h2>
+  <ul>
+    {{#skills}}
+    <li><strong>{{group}}:</strong> {{items}}</li>
+    {{/skills}}
+  </ul>
+</section>
+
+<section>
+  <h2>Experience</h2>
+  {{#experience}}
+  <div class="entry">
+    <div class="entry-head">
+      <span class="entry-title">{{title}}, {{organisation}}</span>
+      <span class="entry-dates">{{dates}}</span>
+    </div>
+    {{#subtitle}}<div class="entry-sub">{{subtitle}}</div>{{/subtitle}}
+    <ul>
+      {{#bullets}}
+      <li>{{text}}</li>
+      {{/bullets}}
+    </ul>
+  </div>
+  {{/experience}}
+  {{#earlier}}
+  <p><strong>Earlier:</strong> {{earlier}}</p>
+  {{/earlier}}
+</section>
+
+<section>
+  <h2>Projects</h2>
+  {{#projects}}
+  <div class="entry">
+    <div class="entry-head">
+      <span class="entry-title">{{name}}</span>
+      {{#link}}<span class="entry-dates"><a href="https://{{link}}">{{link}}</a></span>{{/link}}
+    </div>
+    {{#tech}}<div class="entry-sub">{{tech}}</div>{{/tech}}
+    <ul>
+      {{#bullets}}
+      <li>{{text}}</li>
+      {{/bullets}}
+    </ul>
+  </div>
+  {{/projects}}
+</section>
+
+<section>
+  <h2>Education</h2>
+  {{#education}}
+  <div class="entry">
+    <div class="entry-head">
+      <span class="entry-title">{{qualification}}{{#institution}}, {{institution}}{{/institution}}</span>
+      <span class="entry-dates">{{dates}}</span>
+    </div>
+    {{#detail}}<div class="entry-sub">{{detail}}</div>{{/detail}}
+  </div>
+  {{/education}}
+</section>
+
+{{#certifications.length}}
+<section>
+  <h2>Certifications</h2>
+  <ul>
+    {{#certifications}}<li>{{.}}</li>{{/certifications}}
+  </ul>
+</section>
+{{/certifications.length}}
+
+</body>
+</html>
