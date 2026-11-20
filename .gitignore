@@ -20,3 +20,7 @@ data/
 Thumbs.db
 .vscode/
 .idea/
+
+# Local notes with keys — never commit
+secret.txt
+*secret*
