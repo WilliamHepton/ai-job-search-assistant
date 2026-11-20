@@ -329,7 +329,9 @@
           "attemptToConvertTypes": false,
           "convertFieldsToString": false
         },
-        "options": {}
+        "options": {
+          "cellFormat": "RAW"
+        }
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000011",
       "name": "Append to sheet",
@@ -437,34 +439,14 @@
     },
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "30 7 * * *"
-            }
-          ]
-        }
-      },
-      "id": "0b1c6c2e-1a01-4c55-9a10-000000000020",
-      "name": "Daily 07:30",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [
-        0,
-        200
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// Build the daily HTML digest: top 5 new jobs scoring >= 60, plus run stats.\nconst jobs = $('Parse score').all().map(i => i.json);\nconst MIN_SCORE = 60, TOP_N = 5;\nconst esc = s => String(s ?? '').replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]));\n\nconst top = jobs\n  .filter(j => Number.isInteger(j.score) && j.score >= MIN_SCORE)\n  .sort((a, b) => b.score - a.score)\n  .slice(0, TOP_N);\n\nconst scored = jobs.filter(j => Number.isInteger(j.score)).length;\nconst failed = jobs.length - scored;\nconst inTok = jobs.reduce((s, j) => s + (j.input_tokens || 0), 0);\nconst outTok = jobs.reduce((s, j) => s + (j.output_tokens || 0), 0);\n// claude-haiku-5-5: $0.10 per 1M input tokens, $0.50 per 1M output tokens.\nconst costUsd = (inTok * 0.10 + outTok * 0.50) / 1e6;\nconst day = $now.setZone('Europe/London').toFormat('ccc d LLL');\n\nconst card = j => `\n  <tr><td style=\"padding:12px 0;border-bottom:1px solid #e5e5e5\">\n    <div style=\"font-size:16px\"><b>${j.score}</b> &middot; <a href=\"${esc(j.url)}\">${esc(j.title)}</a></div>\n    <div style=\"color:#555\">${esc(j.company || 'Company not stated')} &middot; ${esc(j.location)}${j.salary ? ' &middot; ' + esc(j.salary) : ''}</div>\n    <div style=\"margin-top:4px\">${esc(j.reason)}</div>\n    <div style=\"margin-top:4px;color:#2e7d32\">✔ ${esc(j.matched_skills.join(', ') || '–')}</div>\n    <div style=\"color:#c62828\">✘ ${esc(j.missing_skills.join(', ') || '–')}</div>\n  </td></tr>`;\n\nconst body = top.length\n  ? `<table style=\"width:100%;border-collapse:collapse\">${top.map(card).join('')}</table>`\n  : `<p>No new jobs scored ${MIN_SCORE} or more today.</p>`;\n\nconst html = `<div style=\"font-family:Arial,sans-serif;max-width:640px\">\n  <h2 style=\"margin-bottom:4px\">Job digest – ${esc(day)}</h2>\n  <div style=\"color:#555\">${jobs.length} new jobs · ${scored} scored${failed ? ` · ${failed} failed to score` : ''} · ${top.length} at ${MIN_SCORE}+</div>\n  ${body}\n  <p style=\"color:#888;font-size:12px\">Tokens: ${inTok} in / ${outTok} out · est. cost $${costUsd.toFixed(4)} · full list in the Job Tracker sheet.</p>\n</div>`;\n\nconst subject = top.length\n  ? `Job digest: ${top.length} match${top.length > 1 ? 'es' : ''} (top ${top[0].score}) – ${day}`\n  : `Job digest: no strong matches – ${day}`;\n\nreturn [{ json: { subject, html, jobs_new: jobs.length, jobs_scored: scored, matches: top.length, input_tokens: inTok, output_tokens: outTok, cost_usd: costUsd } }];"
+        "jsCode": "// Build the daily HTML digest: top 5 new jobs scoring >= 60, plus run stats.\nconst jobs = $('Parse score').all().map(i => i.json);\nconst MIN_SCORE = 60, TOP_N = 5;\nconst esc = s => String(s ?? '').replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]));\n\nconst top = jobs\n  .filter(j => Number.isInteger(j.score) && j.score >= MIN_SCORE)\n  .sort((a, b) => b.score - a.score)\n  .slice(0, TOP_N);\n\nconst scored = jobs.filter(j => Number.isInteger(j.score)).length;\nconst failed = jobs.length - scored;\nconst inTok = jobs.reduce((s, j) => s + (j.input_tokens || 0), 0);\nconst outTok = jobs.reduce((s, j) => s + (j.output_tokens || 0), 0);\n// claude-haiku-5-5: $0.10 per 1M input tokens, $0.50 per 1M output tokens.\nconst costUsd = (inTok * 0.10 + outTok * 0.50) / 1e6;\nconst day = $now.setZone('Europe/London').toFormat('ccc d LLL');\n\nconst card = j => `\n  <tr><td style=\"padding:12px 0;border-bottom:1px solid #e5e5e5\">\n    <div style=\"font-size:16px\"><b>${j.score}</b> &middot; ${/^https?:\\/\\//i.test(j.url ?? '') ? `<a href=\"${esc(j.url)}\">${esc(j.title)}</a>` : esc(j.title)}</div>\n    <div style=\"color:#555\">${esc(j.company || 'Company not stated')} &middot; ${esc(j.location)}${j.salary ? ' &middot; ' + esc(j.salary) : ''}</div>\n    <div style=\"margin-top:4px\">${esc(j.reason)}</div>\n    <div style=\"margin-top:4px;color:#2e7d32\">✔ ${esc(j.matched_skills.join(', ') || '–')}</div>\n    <div style=\"color:#c62828\">✘ ${esc(j.missing_skills.join(', ') || '–')}</div>\n  </td></tr>`;\n\nconst body = top.length\n  ? `<table style=\"width:100%;border-collapse:collapse\">${top.map(card).join('')}</table>`\n  : `<p>No new jobs scored ${MIN_SCORE} or more today.</p>`;\n\nconst html = `<div style=\"font-family:Arial,sans-serif;max-width:640px\">\n  <h2 style=\"margin-bottom:4px\">Job digest – ${esc(day)}</h2>\n  <div style=\"color:#555\">${jobs.length} new jobs · ${scored} scored${failed ? ` · ${failed} failed to score` : ''} · ${top.length} at ${MIN_SCORE}+</div>\n  ${body}\n  <p style=\"color:#888;font-size:12px\">Tokens: ${inTok} in / ${outTok} out · est. cost $${costUsd.toFixed(4)} · full list in the Job Tracker sheet.</p>\n</div>`;\n\nconst subject = top.length\n  ? `Job digest: ${top.length} match${top.length > 1 ? 'es' : ''} (top ${top[0].score}) – ${day}`\n  : `Job digest: no strong matches – ${day}`;\n\nreturn [{ json: { subject, html, jobs_new: jobs.length, jobs_scored: scored, matches: top.length, input_tokens: inTok, output_tokens: outTok, cost_usd: costUsd } }];"
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000021",
       "name": "Build digest",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3308,
+        3312,
         0
       ],
       "executeOnce": true
@@ -473,7 +455,6 @@
       "parameters": {
         "sendTo": "",
         "subject": "={{ $json.subject }}",
-        "emailType": "html",
         "message": "={{ $json.html }}",
         "options": {
           "appendAttribution": false
@@ -484,13 +465,39 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3528,
+        3536,
         0
       ],
       "webhookId": "a7c1e0d2-5b44-4f1e-9c11-digest000001",
       "retryOnFail": true,
       "maxTries": 3,
-      "waitBetweenTries": 5000
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Ol3EOrYV8KT4UxwS",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 11 * * *"
+            }
+          ]
+        }
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000020",
+      "name": "Daily 11:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        208
+      ]
     }
   ],
   "connections": {
@@ -648,17 +655,6 @@
         ]
       ]
     },
-    "Daily 07:30": {
-      "main": [
-        [
-          {
-            "node": "Search config",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Append to sheet": {
       "main": [
         [
@@ -675,6 +671,17 @@
         [
           {
             "node": "Send digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily 11:30": {
+      "main": [
+        [
+          {
+            "node": "Search config",
             "type": "main",
             "index": 0
           }

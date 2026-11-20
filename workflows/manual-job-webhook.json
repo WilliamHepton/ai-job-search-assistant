@@ -18,7 +18,13 @@
         0,
         0
       ],
-      "webhookId": "job-score-0000-4000-8000-000000000001"
+      "webhookId": "job-score-0000-4000-8000-000000000001",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "RrwCouiIuoxyFySy",
+          "name": "Header Auth account"
+        }
+      }
     },
     {
       "parameters": {
@@ -31,7 +37,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        220,
+        224,
         0
       ]
     },
@@ -44,7 +50,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        440,
+        448,
         0
       ]
     },
@@ -78,7 +84,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        660,
+        656,
         0
       ]
     },
@@ -92,7 +98,7 @@
       "typeVersion": 2,
       "position": [
         880,
-        -100
+        -96
       ]
     },
     {
@@ -122,8 +128,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1100,
-        -100
+        1104,
+        -96
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -144,8 +150,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1320,
-        -100
+        1328,
+        -96
       ]
     },
     {
@@ -157,8 +163,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1540,
-        -100
+        1536,
+        -96
       ]
     },
     {
@@ -313,7 +319,9 @@
           "attemptToConvertTypes": false,
           "convertFieldsToString": false
         },
-        "options": {}
+        "options": {
+          "cellFormat": "RAW"
+        }
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000031",
       "name": "Append to sheet",
@@ -321,7 +329,7 @@
       "typeVersion": 4.5,
       "position": [
         1760,
-        -100
+        -96
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -342,13 +350,12 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1980,
-        -100
+        1984,
+        -96
       ]
     },
     {
       "parameters": {
-        "respondWith": "firstIncomingItem",
         "options": {}
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000033",
@@ -356,8 +363,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        2200,
-        -100
+        2208,
+        -96
       ]
     },
     {
@@ -374,7 +381,7 @@
       "typeVersion": 1.1,
       "position": [
         880,
-        150
+        144
       ]
     }
   ],
@@ -500,7 +507,8 @@
   "settings": {
     "executionOrder": "v1",
     "timezone": "Europe/London",
-    "errorWorkflow": "jobErrorAlerts01"
+    "errorWorkflow": "jobErrorAlerts01",
+    "binaryMode": "separate"
   },
   "pinData": {}
 }
