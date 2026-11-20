@@ -7,19 +7,25 @@
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [0, 0]
+      "position": [
+        0,
+        0
+      ]
     },
     {
       "parameters": {
         "mode": "raw",
-        "jsonOutput": "{\n  \"search_terms\": [\n    \"AI automation\",\n    \"n8n\",\n    \"automation engineer\",\n    \"AI implementation\",\n    \"workflow automation\",\n    \"Power Automate\",\n    \"AI adoption\"\n  ],\n  \"local_area\": \"Malvern\",\n  \"distance_km\": 48,\n  \"results_per_page\": 50,\n  \"max_days_old\": 1\n}",
+        "jsonOutput": "{\n  \"search_terms\": [\n    \"AI automation\",\n    \"n8n\",\n    \"automation engineer\",\n    \"AI implementation\",\n    \"workflow automation\",\n    \"Power Automate\",\n    \"AI adoption\"\n  ],\n  \"local_area\": \"Malvern\",\n  \"distance_km\": 48,\n  \"results_per_page\": 50,\n  \"max_days_old\": 1,\n  \"exclude_title_patterns\": [\n    \"head of\",\n    \"director\",\n    \"vice president\",\n    \"chief\",\n    \"vp of\"\n  ]\n}",
         "options": {}
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000002",
       "name": "Search config",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [220, 0]
+      "position": [
+        220,
+        0
+      ]
     },
     {
       "parameters": {
@@ -29,7 +35,10 @@
       "name": "Build search queries",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [440, 0]
+      "position": [
+        440,
+        0
+      ]
     },
     {
       "parameters": {
@@ -52,10 +61,19 @@
       "name": "Adzuna search",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [660, 0],
+      "position": [
+        660,
+        0
+      ],
       "retryOnFail": true,
       "maxTries": 3,
-      "waitBetweenTries": 5000
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "7hmyvtpv4LQLlUi6",
+          "name": "Adzuna API"
+        }
+      }
     },
     {
       "parameters": {
@@ -65,7 +83,10 @@
       "name": "Normalise jobs",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [880, 0]
+      "position": [
+        880,
+        0
+      ]
     },
     {
       "parameters": {
@@ -77,16 +98,230 @@
       "name": "Remove duplicates in run",
       "type": "n8n-nodes-base.removeDuplicates",
       "typeVersion": 2,
-      "position": [1100, 0]
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Jobs",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000007",
+      "name": "Read existing jobs",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1320,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "// Keep only jobs whose job_id is not already in the sheet.\nconst seen = new Set(\n  $('Read existing jobs').all()\n    .map(i => String(i.json.job_id ?? '').trim())\n    .filter(Boolean)\n);\nreturn $('Remove duplicates in run').all().filter(i => !seen.has(i.json.job_id));"
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000008",
+      "name": "Keep only new jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Drop roles that are clearly too senior before spending LLM tokens on them.\nconst patterns = $('Search config').first().json.exclude_title_patterns ?? [];\nconst escape = s => s.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\nconst re = patterns.length\n  ? new RegExp('\\\\b(' + patterns.map(escape).join('|') + ')\\\\b', 'i')\n  : null;\nreturn $input.all().filter(i => !(re && re.test(i.json.title ?? '')));"
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000009",
+      "name": "Drop obvious mismatches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Map each job to the sheet's columns. Score fields are filled in Phase 3.\nconst today = $now.setZone('Europe/London').toFormat('yyyy-MM-dd');\nreturn $input.all().map(i => ({ json: {\n  job_id: i.json.job_id,\n  date_found: today,\n  source: i.json.source,\n  title: i.json.title,\n  company: i.json.company,\n  location: i.json.location,\n  salary: i.json.salary,\n  url: i.json.url,\n  score: i.json.score ?? '',\n  matched_skills: (i.json.matched_skills ?? []).join(', '),\n  missing_skills: (i.json.missing_skills ?? []).join(', '),\n  reason: i.json.reason ?? '',\n  status: 'New',\n}}));"
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000010",
+      "name": "Prepare sheet rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Jobs",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000011",
+      "name": "Append to sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2200,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
     }
   ],
   "connections": {
-    "Manual Trigger": { "main": [[{ "node": "Search config", "type": "main", "index": 0 }]] },
-    "Search config": { "main": [[{ "node": "Build search queries", "type": "main", "index": 0 }]] },
-    "Build search queries": { "main": [[{ "node": "Adzuna search", "type": "main", "index": 0 }]] },
-    "Adzuna search": { "main": [[{ "node": "Normalise jobs", "type": "main", "index": 0 }]] },
-    "Normalise jobs": { "main": [[{ "node": "Remove duplicates in run", "type": "main", "index": 0 }]] }
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search config": {
+      "main": [
+        [
+          {
+            "node": "Build search queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build search queries": {
+      "main": [
+        [
+          {
+            "node": "Adzuna search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Adzuna search": {
+      "main": [
+        [
+          {
+            "node": "Normalise jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise jobs": {
+      "main": [
+        [
+          {
+            "node": "Remove duplicates in run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove duplicates in run": {
+      "main": [
+        [
+          {
+            "node": "Read existing jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read existing jobs": {
+      "main": [
+        [
+          {
+            "node": "Keep only new jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep only new jobs": {
+      "main": [
+        [
+          {
+            "node": "Drop obvious mismatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drop obvious mismatches": {
+      "main": [
+        [
+          {
+            "node": "Prepare sheet rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare sheet rows": {
+      "main": [
+        [
+          {
+            "node": "Append to sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "settings": { "executionOrder": "v1", "timezone": "Europe/London" },
-  "pinData": {}
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/London",
+    "binaryMode": "separate"
+  },
+  "pinData": {},
+  "id": "C2yBSNTDiIniIbxR"
 }
