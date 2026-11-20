@@ -16,7 +16,7 @@
     {
       "parameters": {
         "mode": "raw",
-        "jsonOutput": "{\n  \"search_terms\": [\n    \"AI automation\",\n    \"n8n\",\n    \"automation engineer\",\n    \"AI implementation\",\n    \"workflow automation\",\n    \"Power Automate\",\n    \"AI adoption\"\n  ],\n  \"local_area\": \"Malvern\",\n  \"distance_km\": 48,\n  \"results_per_page\": 50,\n  \"max_days_old\": 1,\n  \"exclude_title_patterns\": [\n    \"head of\",\n    \"director\",\n    \"vice president\",\n    \"chief\",\n    \"vp of\"\n  ],\n  \"max_jobs_per_run\": 40,\n  \"model\": \"claude-haiku-5-5\",\n  \"candidate_profile\": \"Software developer, BSc Computing and Software Development (2:1). Based near Malvern, UK;\\nwants remote or hybrid within 30 miles. Skills: C#, .NET, C++, JavaScript, Java, SQL,\\nMongoDB, REST APIs, webhooks, third-party API integration, n8n, LLM APIs (Claude),\\nretrieval-based AI assistants, AI-assisted development (Claude Code). Experience:\\n3 years running an indie game studio (2 commercial releases), voluntary finance and\\noperations director of a small gym (systems, software, finances), built a full gym\\nmanagement platform (app, staff portal, backend) and an AI FAQ assistant. Short junior\\nfull-stack developer roles. Seeking AI automation / implementation roles. Not seeking\\npeople-management or senior leadership roles.\"\n}",
+        "jsonOutput": "{\n  \"search_terms\": [\n    \"AI automation\",\n    \"n8n\",\n    \"automation engineer\",\n    \"AI implementation\",\n    \"workflow automation\",\n    \"Power Automate\",\n    \"AI adoption\"\n  ],\n  \"local_area\": \"Malvern\",\n  \"distance_km\": 48,\n  \"results_per_page\": 50,\n  \"max_days_old\": 1,\n  \"exclude_title_patterns\": [\n    \"head of\",\n    \"director\",\n    \"vice president\",\n    \"chief\",\n    \"vp of\"\n  ],\n  \"max_jobs_per_run\": 40,\n  \"model\": \"claude-haiku-5-5\",\n  \"candidate_profile\": \"Software developer, BSc Computing and Software Development (2:1). Based near Malvern, UK;\\nwants remote or hybrid within 30 miles. Skills: C#, .NET, C++, JavaScript, Java, SQL,\\nMongoDB, REST APIs, webhooks, third-party API integration, n8n, LLM APIs (Claude),\\nretrieval-based AI assistants, AI-assisted development (Claude Code). Experience:\\n3 years running an indie game studio (2 commercial releases), voluntary finance and\\noperations director of a small gym (systems, software, finances), built a full gym\\nmanagement platform (app, staff portal, backend) and an AI FAQ assistant. Short junior\\nfull-stack developer roles. Seeking AI automation / implementation roles. Not seeking\\npeople-management or senior leadership roles.\",\n  \"reed_distance_miles\": 30,\n  \"reed_results\": 100,\n  \"reed_max_age_days\": 2\n}",
         "options": {}
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000002",
@@ -74,25 +74,27 @@
           "id": "7hmyvtpv4LQLlUi6",
           "name": "Adzuna API"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "jsCode": "// Normalise Adzuna results into the shared job shape used by every source.\nconst clean = (s) => String(s ?? '')\n  .replace(/<[^>]*>/g, ' ')\n  .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')\n  .replace(/&quot;/g, '\"').replace(/&#39;|&apos;/g, \"'\").replace(/&nbsp;/g, ' ')\n  .replace(/&hellip;/g, '…').replace(/&ndash;/g, '–').replace(/&mdash;/g, '—').replace(/&pound;/g, '£')\n  .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(Number(n)))\n  .replace(/\\s+/g, ' ')\n  .trim();\n\nconst gbp = (n) => '£' + Math.round(n).toLocaleString('en-GB');\nconst formatSalary = (r) => {\n  const { salary_min: min, salary_max: max } = r;\n  if (!min && !max) return '';\n  const range = min && max && min !== max ? `${gbp(min)}–${gbp(max)}` : gbp(min || max);\n  return String(r.salary_is_predicted) === '1' ? `${range} (est.)` : range;\n};\n\nconst out = [];\nfor (const item of $input.all()) {\n  for (const r of item.json.results ?? []) {\n    out.push({ json: {\n      job_id: `adzuna_${r.id}`,\n      source: 'adzuna',\n      title: clean(r.title),\n      company: clean(r.company?.display_name),\n      location: clean(r.location?.display_name),\n      salary: formatSalary(r),\n      url: r.redirect_url ?? '',\n      description: clean(r.description),\n      posted: r.created ?? '',\n    }});\n  }\n}\nreturn out;"
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000005",
-      "name": "Normalise jobs",
+      "name": "Normalise Adzuna jobs",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         880,
         0
-      ]
+      ],
+      "alwaysOutputData": true
     },
     {
       "parameters": {
         "compare": "selectedFields",
-        "fieldsToCompare": "job_id",
+        "fieldsToCompare": "dedup_key",
         "options": {}
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000006",
@@ -100,7 +102,7 @@
       "type": "n8n-nodes-base.removeDuplicates",
       "typeVersion": 2,
       "position": [
-        1104,
+        1544,
         0
       ]
     },
@@ -123,7 +125,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        1328,
+        1768,
         0
       ],
       "executeOnce": true,
@@ -140,14 +142,14 @@
     },
     {
       "parameters": {
-        "jsCode": "// Keep only jobs whose job_id is not already in the sheet.\nconst seen = new Set(\n  $('Read existing jobs').all()\n    .map(i => String(i.json.job_id ?? '').trim())\n    .filter(Boolean)\n);\nreturn $('Remove duplicates in run').all().filter(i => !seen.has(i.json.job_id));"
+        "jsCode": "// Keep only jobs not already in the sheet: same job_id, or same title + company\n// (catches the same job listed on both Adzuna and Reed on different days).\nconst dedupKey = j => `${j.title ?? ''}|${j.company ?? ''}`\n  .toLowerCase().replace(/[^a-z0-9|]+/g, ' ').replace(/\\s+/g, ' ').trim();\nconst rows = $('Read existing jobs').all().map(i => i.json);\nconst seenIds = new Set(rows.map(r => String(r.job_id ?? '').trim()).filter(Boolean));\nconst seenKeys = new Set(rows.filter(r => r.title).map(dedupKey));\nreturn $('Remove duplicates in run').all()\n  .filter(i => !seenIds.has(i.json.job_id) && !seenKeys.has(i.json.dedup_key));"
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000008",
       "name": "Keep only new jobs",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1536,
+        1976,
         0
       ]
     },
@@ -160,7 +162,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1760,
+        2200,
         0
       ]
     },
@@ -173,7 +175,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2864,
+        3304,
         0
       ]
     },
@@ -338,7 +340,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        3088,
+        3528,
         0
       ],
       "retryOnFail": true,
@@ -360,7 +362,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1984,
+        2424,
         0
       ]
     },
@@ -373,7 +375,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2208,
+        2648,
         0
       ]
     },
@@ -410,7 +412,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2416,
+        2856,
         0
       ],
       "retryOnFail": true,
@@ -433,20 +435,20 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2640,
+        3080,
         0
       ]
     },
     {
       "parameters": {
-        "jsCode": "// Build the daily HTML digest: top 5 new jobs scoring >= 60, plus run stats.\nconst jobs = $('Parse score').all().map(i => i.json);\nconst MIN_SCORE = 60, TOP_N = 5;\nconst esc = s => String(s ?? '').replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]));\n\nconst top = jobs\n  .filter(j => Number.isInteger(j.score) && j.score >= MIN_SCORE)\n  .sort((a, b) => b.score - a.score)\n  .slice(0, TOP_N);\n\nconst scored = jobs.filter(j => Number.isInteger(j.score)).length;\nconst failed = jobs.length - scored;\nconst inTok = jobs.reduce((s, j) => s + (j.input_tokens || 0), 0);\nconst outTok = jobs.reduce((s, j) => s + (j.output_tokens || 0), 0);\n// claude-haiku-5-5: $0.10 per 1M input tokens, $0.50 per 1M output tokens.\nconst costUsd = (inTok * 0.10 + outTok * 0.50) / 1e6;\nconst day = $now.setZone('Europe/London').toFormat('ccc d LLL');\n\nconst card = j => `\n  <tr><td style=\"padding:12px 0;border-bottom:1px solid #e5e5e5\">\n    <div style=\"font-size:16px\"><b>${j.score}</b> &middot; ${/^https?:\\/\\//i.test(j.url ?? '') ? `<a href=\"${esc(j.url)}\">${esc(j.title)}</a>` : esc(j.title)}</div>\n    <div style=\"color:#555\">${esc(j.company || 'Company not stated')} &middot; ${esc(j.location)}${j.salary ? ' &middot; ' + esc(j.salary) : ''}</div>\n    <div style=\"margin-top:4px\">${esc(j.reason)}</div>\n    <div style=\"margin-top:4px;color:#2e7d32\">✔ ${esc(j.matched_skills.join(', ') || '–')}</div>\n    <div style=\"color:#c62828\">✘ ${esc(j.missing_skills.join(', ') || '–')}</div>\n  </td></tr>`;\n\nconst body = top.length\n  ? `<table style=\"width:100%;border-collapse:collapse\">${top.map(card).join('')}</table>`\n  : `<p>No new jobs scored ${MIN_SCORE} or more today.</p>`;\n\nconst html = `<div style=\"font-family:Arial,sans-serif;max-width:640px\">\n  <h2 style=\"margin-bottom:4px\">Job digest – ${esc(day)}</h2>\n  <div style=\"color:#555\">${jobs.length} new jobs · ${scored} scored${failed ? ` · ${failed} failed to score` : ''} · ${top.length} at ${MIN_SCORE}+</div>\n  ${body}\n  <p style=\"color:#888;font-size:12px\">Tokens: ${inTok} in / ${outTok} out · est. cost $${costUsd.toFixed(4)} · full list in the Job Tracker sheet.</p>\n</div>`;\n\nconst subject = top.length\n  ? `Job digest: ${top.length} match${top.length > 1 ? 'es' : ''} (top ${top[0].score}) – ${day}`\n  : `Job digest: no strong matches – ${day}`;\n\nreturn [{ json: { subject, html, jobs_new: jobs.length, jobs_scored: scored, matches: top.length, input_tokens: inTok, output_tokens: outTok, cost_usd: costUsd } }];"
+        "jsCode": "// Build the daily HTML digest: top 5 new jobs scoring >= 60, plus run stats.\nconst jobs = $('Parse score').all().map(i => i.json);\nconst MIN_SCORE = 60, TOP_N = 5;\nconst esc = s => String(s ?? '').replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]));\n\nconst top = jobs\n  .filter(j => Number.isInteger(j.score) && j.score >= MIN_SCORE)\n  .sort((a, b) => b.score - a.score)\n  .slice(0, TOP_N);\n\nconst scored = jobs.filter(j => Number.isInteger(j.score)).length;\nconst failed = jobs.length - scored;\nconst inTok = jobs.reduce((s, j) => s + (j.input_tokens || 0), 0);\nconst outTok = jobs.reduce((s, j) => s + (j.output_tokens || 0), 0);\n// claude-haiku-5-5: $0.10 per 1M input tokens, $0.50 per 1M output tokens.\nconst costUsd = (inTok * 0.10 + outTok * 0.50) / 1e6;\nconst day = $now.setZone('Europe/London').toFormat('ccc d LLL');\n\nconst card = j => `\n  <tr><td style=\"padding:12px 0;border-bottom:1px solid #e5e5e5\">\n    <div style=\"font-size:16px\"><b>${j.score}</b> &middot; ${/^https?:\\/\\//i.test(j.url ?? '') ? `<a href=\"${esc(j.url)}\">${esc(j.title)}</a>` : esc(j.title)}</div>\n    <div style=\"color:#555\">${esc(j.company || 'Company not stated')} &middot; ${esc(j.location)}${j.salary ? ' &middot; ' + esc(j.salary) : ''}</div>\n    <div style=\"margin-top:4px\">${esc(j.reason)}</div>\n    <div style=\"margin-top:4px;color:#2e7d32\">✔ ${esc(j.matched_skills.join(', ') || '–')}</div>\n    <div style=\"color:#c62828\">✘ ${esc(j.missing_skills.join(', ') || '–')}</div>\n  </td></tr>`;\n\nconst body = top.length\n  ? `<table style=\"width:100%;border-collapse:collapse\">${top.map(card).join('')}</table>`\n  : `<p>No new jobs scored ${MIN_SCORE} or more today.</p>`;\n\nconst calls = name => { try { return $(name).all(); } catch (e) { return []; } };\nconst srcNote = [['Adzuna', 'Adzuna search'], ['Reed', 'Reed search']].map(([label, name]) => {\n  const c = calls(name), failedCalls = c.filter(i => i.json.error).length;\n  const n = jobs.filter(j => j.source === label.toLowerCase()).length;\n  return `${label}: ${n} new${failedCalls ? ` (${failedCalls}/${c.length} requests failed)` : ''}`;\n}).join(' · ');\n\nconst html = `<div style=\"font-family:Arial,sans-serif;max-width:640px\">\n  <h2 style=\"margin-bottom:4px\">Job digest – ${esc(day)}</h2>\n  <div style=\"color:#555\">${jobs.length} new jobs · ${scored} scored${failed ? ` · ${failed} failed to score` : ''} · ${top.length} at ${MIN_SCORE}+</div>\n  ${body}\n  <p style=\"color:#888;font-size:12px\">${esc(srcNote)}<br>Tokens: ${inTok} in / ${outTok} out · est. cost $${costUsd.toFixed(4)} · full list in the Job Tracker sheet.</p>\n</div>`;\n\nconst subject = top.length\n  ? `Job digest: ${top.length} match${top.length > 1 ? 'es' : ''} (top ${top[0].score}) – ${day}`\n  : `Job digest: no strong matches – ${day}`;\n\nreturn [{ json: { subject, html, jobs_new: jobs.length, jobs_scored: scored, matches: top.length, input_tokens: inTok, output_tokens: outTok, cost_usd: costUsd } }];"
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000021",
       "name": "Build digest",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3312,
+        3752,
         0
       ],
       "executeOnce": true
@@ -465,7 +467,7 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        3536,
+        3976,
         0
       ],
       "webhookId": "a7c1e0d2-5b44-4f1e-9c11-digest000001",
@@ -498,6 +500,87 @@
         0,
         208
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// One Reed query per search term x location (local radius in miles + remote keyword).\nconst c = $('Search config').first().json;\nconst base = { resultsToTake: c.reed_results ?? 100 };\nconst items = [];\nfor (const term of c.search_terms) {\n  items.push({ json: { search_term: term, search_type: 'local',\n    query: { ...base, keywords: term, locationName: c.local_area, distanceFromLocation: c.reed_distance_miles ?? 30 } } });\n  items.push({ json: { search_term: term, search_type: 'remote',\n    query: { ...base, keywords: `${term} remote` } } });\n}\nreturn items;"
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000040",
+      "name": "Build Reed queries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.reed.co.uk/api/1.0/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendQuery": true,
+        "specifyQuery": "json",
+        "jsonQuery": "={{ JSON.stringify($json.query) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 2500
+            }
+          }
+        }
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000041",
+      "name": "Reed search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        656,
+        -260
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalise Reed results into the shared job shape.\n// Reed has no \"posted since\" filter, so drop listings older than reed_max_age_days here.\nconst clean = (s) => String(s ?? '')\n  .replace(/<[^>]*>/g, ' ')\n  .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')\n  .replace(/&quot;/g, '\"').replace(/&#39;|&apos;/g, \"'\").replace(/&nbsp;/g, ' ')\n  .replace(/&hellip;/g, '…').replace(/&ndash;/g, '–').replace(/&mdash;/g, '—').replace(/&pound;/g, '£')\n  .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(Number(n)))\n  .replace(/\\s+/g, ' ')\n  .trim();\n\nconst gbp = (n) => '£' + Math.round(n).toLocaleString('en-GB');\nconst formatSalary = (r) => {\n  const { salary_min: min, salary_max: max } = r;\n  if (!min && !max) return '';\n  const range = min && max && min !== max ? `${gbp(min)}–${gbp(max)}` : gbp(min || max);\n  return String(r.salary_is_predicted) === '1' ? `${range} (est.)` : range;\n};\n\nconst maxAge = $('Search config').first().json.reed_max_age_days ?? 2;\nconst cutoff = $now.setZone('Europe/London').minus({ days: maxAge }).toFormat('yyyy-MM-dd');\nconst isoDate = s => {\n  const m = /^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})$/.exec(String(s ?? '').trim());\n  return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : '';\n};\nconst reedSalary = r => {\n  const min = r.minimumSalary, max = r.maximumSalary;\n  if (!min && !max) return '';\n  const range = min && max && min !== max ? `${gbp(min)}–${gbp(max)}` : gbp(min || max);\n  return (max || min) < 1000 ? `${range} (rate)` : range; // small numbers are day/hour rates\n};\n\nconst out = [];\nfor (const item of $input.all()) {\n  for (const r of item.json.results ?? []) {\n    const posted = isoDate(r.date);\n    if (posted && posted < cutoff) continue;\n    const id = r.jobId ?? r.JobId;\n    if (!id) continue;\n    out.push({ json: {\n      job_id: `reed_${id}`,\n      source: 'reed',\n      title: clean(r.jobTitle),\n      company: clean(r.employerName),\n      location: clean(r.locationName),\n      salary: reedSalary(r),\n      url: r.jobUrl || `https://www.reed.co.uk/jobs/${id}`,\n      description: clean(r.jobDescription),\n      posted,\n    }});\n  }\n}\nreturn out;"
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000042",
+      "name": "Normalise Reed jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -260
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {},
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000043",
+      "name": "Combine sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1100,
+        -130
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check source health and add a cross-source de-dup key (Adzuna also lists Reed jobs).\n// Fails the run (-> error alert) only if every request to every source failed.\nconst dedupKey = j => `${j.title ?? ''}|${j.company ?? ''}`\n  .toLowerCase().replace(/[^a-z0-9|]+/g, ' ').replace(/\\s+/g, ' ').trim();\nconst calls = name => { try { return $(name).all(); } catch (e) { return []; } };\nconst sources = { Adzuna: calls('Adzuna search'), Reed: calls('Reed search') };\nconst down = Object.entries(sources).filter(([, c]) => c.length && c.every(i => i.json.error));\nif (down.length === Object.keys(sources).length) {\n  const first = down[0][1][0].json.error;\n  throw new Error('All job sources failed. First error: ' + (typeof first === 'string' ? first : first?.message ?? 'unknown'));\n}\nreturn $input.all()\n  .filter(i => i.json.job_id)\n  .map(i => ({ json: { ...i.json, dedup_key: dedupKey(i.json) } }));"
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000044",
+      "name": "Check sources",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        -130
+      ]
     }
   ],
   "connections": {
@@ -519,6 +602,11 @@
             "node": "Build search queries",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Build Reed queries",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -538,18 +626,7 @@
       "main": [
         [
           {
-            "node": "Normalise jobs",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Normalise jobs": {
-      "main": [
-        [
-          {
-            "node": "Remove duplicates in run",
+            "node": "Normalise Adzuna jobs",
             "type": "main",
             "index": 0
           }
@@ -682,6 +759,72 @@
         [
           {
             "node": "Search config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise Adzuna jobs": {
+      "main": [
+        [
+          {
+            "node": "Combine sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Reed queries": {
+      "main": [
+        [
+          {
+            "node": "Reed search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reed search": {
+      "main": [
+        [
+          {
+            "node": "Normalise Reed jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise Reed jobs": {
+      "main": [
+        [
+          {
+            "node": "Combine sources",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Combine sources": {
+      "main": [
+        [
+          {
+            "node": "Check sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check sources": {
+      "main": [
+        [
+          {
+            "node": "Remove duplicates in run",
             "type": "main",
             "index": 0
           }
