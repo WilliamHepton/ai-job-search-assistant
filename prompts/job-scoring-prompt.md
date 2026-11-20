@@ -1,6 +1,8 @@
 # Job scoring prompt
 
-Model: `claude-haiku-5-5`, temperature 0.
+Model: `claude-haiku-5-5`, effort `low`, called from an n8n HTTP Request node (Messages API, `anthropic-version: 2026-10-21`).
+
+The response is constrained with **structured outputs** (`output_config.format` with a JSON schema), so it always matches the shape below. `temperature` is not set: current models reject non-default sampling parameters. The Code-node validation further down remains as a backup for refusals, cut-off responses and API errors.
 
 ## System prompt
 
