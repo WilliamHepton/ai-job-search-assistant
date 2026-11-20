@@ -1,0 +1,506 @@
+{
+  "id": "jobManualWebhk01",
+  "name": "Manual Job Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "job-score",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000023",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "job-score-0000-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"model\": \"claude-haiku-5-5\",\n  \"candidate_profile\": \"Software developer, BSc Computing and Software Development (2:1). Based near Malvern, UK;\\nwants remote or hybrid within 30 miles. Skills: C#, .NET, C++, JavaScript, Java, SQL,\\nMongoDB, REST APIs, webhooks, third-party API integration, n8n, LLM APIs (Claude),\\nretrieval-based AI assistants, AI-assisted development (Claude Code). Experience:\\n3 years running an indie game studio (2 commercial releases), voluntary finance and\\noperations director of a small gym (systems, software, finances), built a full gym\\nmanagement platform (app, staff portal, backend) and an AI FAQ assistant. Short junior\\nfull-stack developer roles. Seeking AI automation / implementation roles. Not seeking\\npeople-management or senior leadership roles.\"\n}",
+        "options": {}
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000024",
+      "name": "Scoring config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate the posted job and turn it into the shared job shape.\nconst body = $('Webhook').first().json.body ?? {};\nconst str = v => (typeof v === 'string' ? v.trim() : '');\nconst job = {\n  job_id: 'manual_' + $now.toMillis(),\n  source: 'manual',\n  title: str(body.title),\n  company: str(body.company),\n  location: str(body.location),\n  salary: str(body.salary),\n  url: str(body.url),\n  description: str(body.description).slice(0, 20000),\n};\nconst errors = ['title', 'company', 'description'].filter(f => !job[f]).map(f => `${f} is required`);\nif (job.url && !/^https?:\\/\\//i.test(job.url)) errors.push('url must start with http:// or https://');\nreturn [{ json: { ...job, valid: errors.length === 0, errors } }];"
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000025",
+      "name": "Validate input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "valid-check",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000026",
+      "name": "Is valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build one Claude Messages API request per job.\n// Structured outputs (output_config.format) make the response match the schema.\nconst cfg = $('Scoring config').first().json;\n\nconst SYSTEM_PROMPT = `You are a recruitment screening assistant. You compare one job listing against one\ncandidate profile and return ONLY valid JSON, no prose, no code fences.\n\nScoring guide:\n- 80–100: strong fit on core skills, level and location/remote\n- 60–79: good fit with 1–2 learnable gaps\n- 40–59: partial fit, several gaps\n- 0–39: poor fit or wrong seniority/location\n\nRules:\n- Judge only on the information given. Do not invent requirements.\n- If salary is missing, do not penalise.\n- Penalise roles requiring 5+ years in a specific tool, people-management of large\n  teams, or on-site work more than 30 miles from Malvern, UK.\n- Prefer hands-on automation/building roles over pure change-management roles.\n- matched_skills and missing_skills: up to 6 short strings each.\n- reason: one sentence, max 25 words.`;\n\nconst SCHEMA = {\n  type: 'object',\n  properties: {\n    score: { type: 'integer', description: 'Match score 0-100' },\n    matched_skills: { type: 'array', items: { type: 'string' } },\n    missing_skills: { type: 'array', items: { type: 'string' } },\n    seniority_fit: { type: 'string', enum: ['junior', 'mid', 'senior', 'unclear'] },\n    remote_or_local_ok: { type: 'boolean' },\n    reason: { type: 'string' },\n  },\n  required: ['score', 'matched_skills', 'missing_skills', 'seniority_fit', 'remote_or_local_ok', 'reason'],\n  additionalProperties: false,\n};\n\nreturn $input.all().map(i => {\n  const j = i.json;\n  const userMessage = [\n    'CANDIDATE PROFILE:',\n    cfg.candidate_profile,\n    '',\n    'JOB LISTING:',\n    `Title: ${j.title}`,\n    `Company: ${j.company || 'Not stated'}`,\n    `Location: ${j.location || 'Not stated'}`,\n    `Salary: ${j.salary || 'Not stated'}`,\n    'Description:',\n    j.description || 'Not provided',\n  ].join('\\n');\n\n  return { json: {\n    ...j,\n    claude_request: {\n      model: cfg.model,\n      max_tokens: 2000,\n      system: SYSTEM_PROMPT,\n      output_config: { effort: 'low', format: { type: 'json_schema', schema: SCHEMA } },\n      messages: [{ role: 'user', content: userMessage }],\n    },\n  }};\n});"
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000027",
+      "name": "Build Claude request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2026-10-21"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.claude_request) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000028",
+      "name": "Score with Claude",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        -100
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "epw4aVH3vjTySKWS",
+          "name": "Anthropic API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse and validate each Claude response. One bad response never breaks the run:\n// it falls back to score = null with the reason recorded.\nconst jobs = $('Build Claude request').all();\n\nconst fallback = (why) => ({\n  score: null, matched_skills: [], missing_skills: [],\n  seniority_fit: 'unclear', remote_or_local_ok: null, reason: `parse error: ${why}`,\n});\n\nconst parse = (resp) => {\n  if (!resp || resp.error) {\n    const e = resp?.error;\n    return fallback(typeof e === 'string' ? e : (e?.message ?? 'request failed'));\n  }\n  if (resp.stop_reason === 'refusal') return fallback('model refused');\n  if (resp.stop_reason === 'max_tokens') return fallback('response cut off');\n  const text = (resp.content ?? []).find(b => b.type === 'text')?.text;\n  if (!text) return fallback('no text in response');\n  let data;\n  try {\n    data = JSON.parse(text.replace(/^\\s*```(?:json)?\\s*|\\s*```\\s*$/g, ''));\n  } catch (e) {\n    return fallback('invalid JSON');\n  }\n  if (!Number.isInteger(data.score) || data.score < 0 || data.score > 100) {\n    return fallback('score not an integer 0-100');\n  }\n  const list = (a) => (Array.isArray(a) ? a.map(String).slice(0, 6) : []);\n  return {\n    score: data.score,\n    matched_skills: list(data.matched_skills),\n    missing_skills: list(data.missing_skills),\n    seniority_fit: data.seniority_fit ?? 'unclear',\n    remote_or_local_ok: typeof data.remote_or_local_ok === 'boolean' ? data.remote_or_local_ok : null,\n    reason: String(data.reason ?? '').trim(),\n  };\n};\n\nreturn $input.all().map((item, idx) => {\n  const { claude_request, ...job } = jobs[idx]?.json ?? {};\n  const resp = item.json;\n  return { json: {\n    ...job,\n    ...parse(resp),\n    input_tokens: resp?.usage?.input_tokens ?? 0,\n    output_tokens: resp?.usage?.output_tokens ?? 0,\n  }};\n});"
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000029",
+      "name": "Parse score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Map each job to the sheet's columns. Score fields are filled in Phase 3.\nconst today = $now.setZone('Europe/London').toFormat('yyyy-MM-dd');\nreturn $input.all().map(i => ({ json: {\n  job_id: i.json.job_id,\n  date_found: today,\n  source: i.json.source,\n  title: i.json.title,\n  company: i.json.company,\n  location: i.json.location,\n  salary: i.json.salary,\n  url: i.json.url,\n  score: i.json.score ?? '',\n  matched_skills: (i.json.matched_skills ?? []).join(', '),\n  missing_skills: (i.json.missing_skills ?? []).join(', '),\n  reason: i.json.reason ?? '',\n  status: 'New',\n}}));"
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000030",
+      "name": "Prepare sheet rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Jobs",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "date_found",
+              "displayName": "date_found",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "salary",
+              "displayName": "salary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "matched_skills",
+              "displayName": "matched_skills",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "missing_skills",
+              "displayName": "missing_skills",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reason",
+              "displayName": "reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000031",
+      "name": "Append to sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1760,
+        -100
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8QeZAhAEn9k02vIY",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Return the score to the caller (without internal fields).\nconst r = $('Parse score').first().json;\nreturn [{ json: {\n  job_id: r.job_id, title: r.title, company: r.company,\n  score: r.score, matched_skills: r.matched_skills, missing_skills: r.missing_skills,\n  seniority_fit: r.seniority_fit, remote_or_local_ok: r.remote_or_local_ok, reason: r.reason,\n  logged_to_sheet: true,\n}}];"
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000032",
+      "name": "Build response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000033",
+      "name": "Respond with score",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2200,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: \"invalid input\", details: $json.errors }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000034",
+      "name": "Respond 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        150
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Scoring config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scoring config": {
+      "main": [
+        [
+          {
+            "node": "Validate input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate input": {
+      "main": [
+        [
+          {
+            "node": "Is valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is valid?": {
+      "main": [
+        [
+          {
+            "node": "Build Claude request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Claude request": {
+      "main": [
+        [
+          {
+            "node": "Score with Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score with Claude": {
+      "main": [
+        [
+          {
+            "node": "Parse score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse score": {
+      "main": [
+        [
+          {
+            "node": "Prepare sheet rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare sheet rows": {
+      "main": [
+        [
+          {
+            "node": "Append to sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to sheet": {
+      "main": [
+        [
+          {
+            "node": "Build response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build response": {
+      "main": [
+        [
+          {
+            "node": "Respond with score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/London",
+    "errorWorkflow": "jobErrorAlerts01"
+  },
+  "pinData": {}
+}

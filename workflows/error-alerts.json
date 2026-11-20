@@ -1,0 +1,58 @@
+{
+  "id": "jobErrorAlerts01",
+  "name": "Job Search Error Alerts",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000035",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "",
+        "subject": "=Job scan failed: {{ $json.workflow.name }}",
+        "emailType": "html",
+        "message": "=<p><b>Workflow:</b> {{ $json.workflow.name }}</p>\n<p><b>Failed node:</b> {{ $json.execution.lastNodeExecuted || 'unknown' }}</p>\n<p><b>Error:</b> {{ $json.execution.error.message }}</p>\n<p><b>Time:</b> {{ $now.setZone('Europe/London').toFormat('yyyy-MM-dd HH:mm') }}</p>\n<p><a href=\"{{ $json.execution.url }}\">Open the failed execution</a></p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "0b1c6c2e-1a01-4c55-9a10-000000000036",
+      "name": "Email alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        220,
+        0
+      ],
+      "webhookId": "b8d2f1e3-6c55-4a2f-8d22-erroralert01",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Email alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/London"
+  },
+  "pinData": {}
+}
