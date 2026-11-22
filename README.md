@@ -14,7 +14,7 @@ Job hunting by hand means opening several job sites every day, skimming dozens o
 
 Every day at 11:30, n8n:
 
-1. **Fetches** new UK listings from the **Adzuna** and **Reed** APIs for 9 search terms based on my target roles, both near Malvern and remote.
+1. **Fetches** new UK listings from the **Adzuna** and **Reed** APIs for 12 search terms based on my target roles (implementation, integration and automation first), both near Malvern and remote. Titles that are clearly wrong (too senior, or trades such as electrical, civil or HVAC) are dropped before scoring.
 2. **De-duplicates** them within the run and against jobs already in the sheet, including the same job listed on both sites (matched on title + company).
 3. **Scores** each new job with Claude against my profile: match score 0–100, matched and missing skills, and a one-line reason. The output is validated JSON.
 4. **Logs** every job to a Google Sheet (OAuth2).
