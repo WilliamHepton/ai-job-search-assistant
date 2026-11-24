@@ -78,5 +78,34 @@ const runNode = async (code, ctx) => {
   assert.ok(cv.experience.find(e => e.source === 'TG').bullets.every(b => b.source_id.startsWith('TG-')), 'TG falls back to its own bullets');
   assert.ok(!html.includes('{{'), 'template fully rendered');
   assert.ok(html.includes('alex@example.com'), 'contact details come from the file');
+
+  // 4. A Microsoft-stack job: skill layout, n8n wording, and tech that the cited fact doesn't name.
+  const msJob = { job_id: 'test_2', title: 'Application Engineer', company: 'Example Ltd', description: 'C# .NET, Power Automate and Azure.', score: 60 };
+  const ms = { ...cheat, headline: 'Software Developer | Azure Engineer',
+    skills: [
+      { group: 'Programming', items: 'Java, MongoDB, C++, JavaScript (including n8n Code nodes), C#, Docker', source_id: 'SK-PROG' },
+      { group: 'Automation', items: 'n8n (self-hosted in Docker), REST APIs, Power Automate', source_id: 'SK-AUTO' },
+    ],
+    experience: [{ source: 'PZ', bullets: [{ text: 'Worked on workforce management software in Angular.', source_id: 'PZ-01' }] }] };
+  const [out2] = await runNode(nodeCode('Validate and render'), {
+    $: name => ({
+      'CV config': { first: () => ({ json: config }) },
+      'Parse profile': { first: () => ({ json: { profile } }) },
+      'Build tailoring request': { itemMatching: () => ({ json: { job: msJob, template } }) },
+    }[name]),
+    $input: { all: () => [{ json: { ...claudeResponse, content: [{ type: 'text', text: JSON.stringify(ms) }] } }] },
+  });
+  assert.equal(out2.json.ok, true, out2.json.error);
+  const cv2 = out2.json.cv_data, html2 = Buffer.from(out2.binary.index.data, 'base64').toString('utf8');
+  const group = g => cv2.skills.find(s => s.group === g)?.items ?? '';
+  assert.match(group('Programming'), /^C#, \.NET, SQL(, PostgreSQL)?(, TypeScript)?, JavaScript[^,]*, C\+\+/, 'Microsoft-stack order');
+  assert.ok(!/\bJava\b|MongoDB|Docker|Git/.test(group('Programming')), 'Java, MongoDB and tools not under Programming');
+  assert.equal(group('Tools and DevOps'), 'Git/GitHub, Docker');
+  assert.ok(group('Automation and integration').startsWith('workflow automation in n8n (same model as Power Automate'), 'fixed n8n wording');
+  assert.equal(html2.split('Power Automate').length, 2, 'Power Automate only inside the fixed wording');
+  assert.ok(!html2.includes('Azure') || !profile.notLearned.includes('Azure'), 'Azure blocked when it is on the not-learned list');
+  assert.ok(!html2.includes('Angular'), 'tech the cited fact does not name is removed');
+  // The headline may use job-title words only; a tech word from neither source is reported.
+  assert.ok(!out2.json.validator_log.some(l => l.startsWith('NOT IN MASTER PROFILE')), 'nothing outside the profile is printed');
   console.log('\nAll validator checks passed.');
 })().catch(e => { console.error(e); process.exit(1); });

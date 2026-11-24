@@ -40,6 +40,8 @@ An LLM writing CVs freely will sooner or later claim a skill I don't have. So he
   - No "not yet learned" term (Python, Zapier, MCP…) may appear anywhere. Common words such as "Make" are only matched with the exact capitalisation.
   - A reworded bullet may not add a **number** the original doesn't contain, and may not grow much longer. If it fails, the original wording is used.
   - The headline must start "Software Developer |" and use only words from the headline options or the job title.
+  - A bullet may not name a technology its own fact does not name. A last check reports any skill on the CV that is not in the profile.
+  - Code sets the skill layout: Docker and Git on a "Tools and DevOps" line, and a fixed order for Microsoft-stack jobs.
   - If a role ends up with no valid bullets, its original bullets are used. Roles are always shown newest first.
   - [`tests/validate-cv.test.js`](tests/validate-cv.test.js) runs the real node code against a response that tries all of these tricks.
 - **Prompt injection:** job descriptions are untrusted text. The model has no tools, must answer in the fixed schema, and is told to ignore instructions inside the listing. The validator also catches anything that slips through.
