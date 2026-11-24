@@ -1,14 +1,15 @@
 # Architecture
 
-Four n8n workflows, plus Gotenberg for PDFs, all in one Docker Compose setup.
+Five n8n workflows, plus Gotenberg for PDFs, all in one Docker Compose setup.
 
 ```mermaid
 flowchart LR
     A[A: Daily Job Scan] -- jobs 50+ --> D[D: Generate Tailored CV]
     B[B: Manual Job Webhook] -- job 50+ --> D
-    A & B & D -. on failure .-> C[C: Error Alerts]
-    D -- HTML --> G[(Gotenberg)]
-    D -- PDF --> DR[(Google Drive: Tailored CVs)]
+    A & B -- jobs with a CV --> E[E: Generate Job Brief]
+    A & B & D & E -. on failure .-> C[C: Error Alerts]
+    D & E -- HTML --> G[(Gotenberg)]
+    D & E -- PDF --> DR[(Google Drive: Tailored CVs)]
     A & B --> GS[(Google Sheet)]
 ```
 
@@ -28,7 +29,10 @@ flowchart TD
     GS --> CC[CV candidates: this run + older rows without a CV]
     CC --> GEN[[Generate CVs: workflow D]]
     GEN --> UP[(Update CV columns by job_id)]
-    GEN --> DG[Build digest: top 5, CV links, cost] --> GM[Gmail]
+    GEN --> BC[Brief candidates: new CVs + older rows without a brief]
+    BC --> BR[[Generate briefs: workflow E]]
+    BR --> UB[(Update job_brief_link by job_id)]
+    BR --> DG[Build digest: top 5, CV and brief links, cost] --> GM[Gmail]
 ```
 
 ## Workflow B: Manual Job Webhook
@@ -36,7 +40,7 @@ flowchart TD
 ```mermaid
 flowchart LR
     W[POST /job-score + token] --> V[Validate] --> C[Score with Claude] --> P[Parse JSON]
-    P --> GEN[[Generate CV: workflow D]] --> GS[(Append to sheet, with CV link)] --> R[Respond: score + CV link]
+    P --> GEN[[Generate CV: workflow D]] --> BR[[Generate brief: workflow E]] --> GS[(Append to sheet, with links)] --> R[Respond: score + links]
     V -- invalid --> R4[Respond 400]
 ```
 
@@ -59,6 +63,20 @@ flowchart TD
 ```
 
 Every failure path joins one Merge node, so each selected job gets exactly one result: a CV link, or `CV failed (attempt n) at <step>: <reason>`, which is retried on the next run.
+
+## Workflow E: Generate Job Brief (sub-workflow)
+
+```mermaid
+flowchart TD
+    T[Called by A or B] --> CFG[Brief config] --> SEL[Select jobs: has a CV, no brief, max 10]
+    SEL --> Q{From Reed?}
+    Q -- yes --> RD[Reed job details API: full listing] --> RT
+    Q -- no --> RT[Read brief template]
+    RT --> BR[Build request: listing as untrusted text] --> CL[Claude: JSON schema, a quote per fact]
+    CL --> CH[Check quotes and numbers; render HTML] --> PDF[Gotenberg: HTML to PDF]
+    PDF --> UPL[Upload to the same Drive folder] --> RES[Brief results: link, tokens, cost]
+    CL & CH & PDF & UPL -. failure .-> RES
+```
 
 ## Workflow C: Error Alerts
 

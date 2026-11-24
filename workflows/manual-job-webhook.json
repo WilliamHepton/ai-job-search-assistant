@@ -156,14 +156,14 @@
     },
     {
       "parameters": {
-        "jsCode": "// Map the scored job to the sheet's columns, with the CV link if one was made.\nconst today = $now.setZone('Europe/London').toFormat('yyyy-MM-dd');\nconst cvs = Object.fromEntries($('Generate CV').all().map(i => i.json).filter(r => r.job_id).map(r => [r.job_id, r]));\nreturn $('Parse score').all().map(i => ({ json: {\n  job_id: i.json.job_id,\n  date_found: today,\n  source: i.json.source,\n  title: i.json.title,\n  company: i.json.company,\n  location: i.json.location,\n  salary: i.json.salary,\n  url: i.json.url,\n  score: i.json.score ?? '',\n  matched_skills: (i.json.matched_skills ?? []).join(', '),\n  missing_skills: (i.json.missing_skills ?? []).join(', '),\n  reason: i.json.reason ?? '',\n  status: 'New',\n  cv_link: cvs[i.json.job_id]?.cv_link ?? '',\n  cv_generated_at: cvs[i.json.job_id]?.cv_generated_at ?? '',\n  tailoring_notes: cvs[i.json.job_id]?.tailoring_notes ?? '',\n}}));"
+        "jsCode": "// Map the scored job to the sheet's columns, with the CV link if one was made.\nconst today = $now.setZone('Europe/London').toFormat('yyyy-MM-dd');\nconst cvs = Object.fromEntries($('Generate CV').all().map(i => i.json).filter(r => r.job_id).map(r => [r.job_id, r]));\nconst briefs = Object.fromEntries($('Generate brief').all().map(i => i.json).filter(r => r.job_id).map(r => [r.job_id, r]));\nreturn $('Parse score').all().map(i => ({ json: {\n  job_id: i.json.job_id,\n  date_found: today,\n  source: i.json.source,\n  title: i.json.title,\n  company: i.json.company,\n  location: i.json.location,\n  salary: i.json.salary,\n  url: i.json.url,\n  score: i.json.score ?? '',\n  matched_skills: (i.json.matched_skills ?? []).join(', '),\n  missing_skills: (i.json.missing_skills ?? []).join(', '),\n  reason: i.json.reason ?? '',\n  status: 'New',\n  cv_link: cvs[i.json.job_id]?.cv_link ?? '',\n  cv_generated_at: cvs[i.json.job_id]?.cv_generated_at ?? '',\n  tailoring_notes: cvs[i.json.job_id]?.tailoring_notes ?? '',\n  job_brief_link: briefs[i.json.job_id]?.job_brief_link ?? '',\n}}));"
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000030",
       "name": "Prepare sheet rows",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1760,
+        2208,
         -96
       ]
     },
@@ -328,7 +328,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        1984,
+        2432,
         -96
       ],
       "retryOnFail": true,
@@ -343,14 +343,14 @@
     },
     {
       "parameters": {
-        "jsCode": "// Return the score to the caller (without internal fields).\nconst r = $('Parse score').first().json;\nconst row = $('Prepare sheet rows').first().json;\nreturn [{ json: {\n  job_id: r.job_id, title: r.title, company: r.company,\n  score: r.score, matched_skills: r.matched_skills, missing_skills: r.missing_skills,\n  seniority_fit: r.seniority_fit, remote_or_local_ok: r.remote_or_local_ok, reason: r.reason,\n  logged_to_sheet: true,\n  cv_link: row.cv_link || null,\n  tailoring_notes: row.tailoring_notes || null,\n}}];"
+        "jsCode": "// Return the score to the caller (without internal fields).\nconst r = $('Parse score').first().json;\nconst row = $('Prepare sheet rows').first().json;\nreturn [{ json: {\n  job_id: r.job_id, title: r.title, company: r.company,\n  score: r.score, matched_skills: r.matched_skills, missing_skills: r.missing_skills,\n  seniority_fit: r.seniority_fit, remote_or_local_ok: r.remote_or_local_ok, reason: r.reason,\n  logged_to_sheet: true,\n  cv_link: row.cv_link || null,\n  job_brief_link: row.job_brief_link || null,\n  tailoring_notes: row.tailoring_notes || null,\n}}];"
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000032",
       "name": "Build response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2208,
+        2656,
         -96
       ]
     },
@@ -363,7 +363,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        2432,
+        2880,
         -96
       ]
     },
@@ -403,6 +403,44 @@
       "typeVersion": 1.2,
       "position": [
         1552,
+        -96
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// The job, if a CV was made for it. An empty result still continues, so the job is always logged.\nconst made = new Map($('Generate CV').all().map(i => i.json).filter(r => r.job_id && r.cv_ok).map(r => [r.job_id, r.cv_link]));\nconst today = $now.setZone('Europe/London').toFormat('yyyy-MM-dd');\nreturn $('Parse score').all().map(i => i.json).filter(j => made.has(j.job_id)).map(j => ({ json: { ...j, date_found: today, cv_link: made.get(j.job_id) } }));"
+      },
+      "id": "9d41b7e2-br00-4f6a-9c21-b00000000001",
+      "name": "Brief candidate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        -96
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "jobBriefPdf00001",
+          "mode": "id",
+          "cachedResultName": "Generate Job Brief"
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "9d41b7e2-br00-4f6a-9c21-b00000000002",
+      "name": "Generate brief",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2000,
         -96
       ],
       "alwaysOutputData": true,
@@ -528,6 +566,28 @@
       ]
     },
     "Generate CV": {
+      "main": [
+        [
+          {
+            "node": "Brief candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brief candidate": {
+      "main": [
+        [
+          {
+            "node": "Generate brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate brief": {
       "main": [
         [
           {

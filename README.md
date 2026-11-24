@@ -19,12 +19,13 @@ Every day at 11:30, n8n:
 3. **Scores** each new job with Claude against my profile: match score 0–100, matched and missing skills, and a one-line reason. The output is validated JSON.
 4. **Logs** every job to a Google Sheet (OAuth2).
 5. **Writes a tailored CV** (PDF) for every job scoring 50 or more, saves it to Google Drive and links it in the sheet. See below.
-6. **Emails** a Gmail digest of the top 5 matches, each with a link to its tailored CV, plus token and cost stats.
+6. **Makes a job brief** (PDF) for every job that gets a CV, to re-read before an interview, and links it in the sheet.
+7. **Emails** a Gmail digest of the top 5 matches, each with links to its tailored CV and job brief, plus token and cost stats.
 
 Also:
 
-7. A **webhook** scores a job I paste in by hand, logs it and returns the score and the CV link as JSON.
-8. An **error workflow** emails me if any run fails.
+8. A **webhook** scores a job I paste in by hand, logs it and returns the score, the CV link and the brief link as JSON.
+9. An **error workflow** emails me if any run fails.
 
 See [docs/architecture.md](docs/architecture.md) for the diagrams.
 
@@ -49,6 +50,16 @@ An LLM writing CVs freely will sooner or later claim a skill I don't have. So he
 - **Storage:** the PDF is uploaded to a `Tailored CVs` folder in Google Drive as `Name_CV_Company_JobTitle_YYYY-MM-DD.pdf`. The sheet gets `cv_link`, `cv_generated_at` and `tailoring_notes` (what the model emphasised and why, plus anything the validator fixed).
 
 Settings (threshold 50, at most 10 CVs per run, 14-day backfill, 3 attempts per job) live in one **CV config** node.
+
+## Job briefs
+
+Listings often disappear before the interview, so each job with a CV also gets a brief: company, title, salary, dates, location, on-site/hybrid/remote, contract, duties, requirements, technologies, benefits, strengths and gaps, likely questions, questions to ask, and the listing text as captured.
+
+- **Full text where possible:** search results are cut to about 500 characters. Reed's job details API gives the full listing. Adzuna has no equivalent, so those briefs carry a warning to save the listing by hand.
+- **Facts need proof:** Claude must give a word-for-word quote for every fact. Code drops any fact whose quote is not in the listing, and prints the listing's own words if a rewording changes a number. Remote or hybrid needs a quote about the way of working; a town name is not enough.
+- **Suggestions are labelled** as AI-written, separate from facts.
+- **Separate sub-workflow:** a failed brief never affects the CV. It is retried on the next run, for up to 14 days.
+- [`tests/job-brief.test.js`](tests/job-brief.test.js) checks these rules on the real node code.
 
 ## Tech used
 
@@ -86,7 +97,8 @@ Settings (threshold 50, at most 10 CVs per run, 14-day backfill, 3 attempts per 
 | Scoring, per job | ~$0.0002 |
 | Tailored CV, per job (Haiku 5.5, ~7k tokens in / ~4.5k out incl. thinking) | **~$0.003** |
 | Same CV on Sonnet 5.5 (tested, very similar quality) | ~$0.04 |
-| A typical day (40 jobs scored, 4 CVs) | ~$0.02 |
+| Job brief, per job (Haiku 5.5) | ~$0.002 |
+| A typical day (40 jobs scored, 4 CVs and briefs) | ~$0.03 |
 
 _TODO: measured monthly cost after the 7-day run._
 
@@ -107,12 +119,12 @@ _TODO: before/after minutes per day, jobs reviewed per day, cost per month._
    - a generic Google OAuth2 credential with scope `https://www.googleapis.com/auth/drive.file`
    - a header token for the webhook
 5. Import the workflows from `workflows/`, set your sheet URL and email address, and publish them.
-6. Add these column headers to your sheet: `job_id, date_found, source, title, company, location, salary, url, score, matched_skills, missing_skills, reason, status, cv_link, cv_generated_at, tailoring_notes`.
-7. Run the validator test: `node tests/validate-cv.test.js`.
+6. Add these column headers to your sheet: `job_id, date_found, source, title, company, location, salary, url, score, matched_skills, missing_skills, reason, status, cv_link, cv_generated_at, tailoring_notes, job_brief_link`.
+7. Run the tests: `node tests/validate-cv.test.js` and `node tests/job-brief.test.js`.
 
 ## Limitations and next steps
 
-- Adzuna only returns a short description snippet, so scoring and tailoring work on partial information for those jobs.
+- Adzuna only returns a short description snippet, so scoring, tailoring and briefs work on partial information for those jobs.
 - Older jobs picked up again for a CV have no description stored in the sheet, so they're tailored from the title and the scoring notes.
 - The validator stops invented facts and numbers, but it can't judge tone. CVs are drafts to check before sending.
 - Out of scope for now: auto-applying, cover letters, a front-end app.

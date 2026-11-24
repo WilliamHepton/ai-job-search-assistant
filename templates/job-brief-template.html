@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Job brief – {{title}}, {{company_name}}</title>
+<!-- Job brief for interview preparation. Mustache syntax, same renderer as cv-template.html. -->
+<style>
+  @page { size: A4; margin: 14mm 15mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Calibri", "Carlito", "Segoe UI", Arial, sans-serif; font-size: 10.5pt; line-height: 1.35; color: #1a1a1a; margin: 0; }
+  header { border-bottom: 2px solid #1f4e79; padding-bottom: 6px; margin-bottom: 8px; }
+  h1 { font-size: 19pt; margin: 0; color: #1f4e79; }
+  .company { font-size: 13pt; font-weight: 600; }
+  h2 { font-size: 11.5pt; text-transform: uppercase; letter-spacing: 0.8px; color: #1f4e79; border-bottom: 1px solid #c9d6e3; margin: 12px 0 5px; padding-bottom: 2px; page-break-after: avoid; }
+  p { margin: 0 0 4px; }
+  ul, ol { margin: 2px 0 6px; padding-left: 18px; }
+  li { margin-bottom: 2px; page-break-inside: avoid; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 2px 6px 2px 0; vertical-align: top; border-bottom: 1px solid #eef2f6; }
+  td.label { width: 32%; font-weight: 600; }
+  .note { background: #fff6dd; border-left: 3px solid #d9a300; padding: 5px 8px; margin: 6px 0; }
+  .suggested { font-size: 9pt; color: #666; font-style: italic; page-break-after: avoid; }
+  .lead { font-weight: 600; page-break-after: avoid; }
+  .listing p { font-size: 9.5pt; }
+  a { color: #1f4e79; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>{{title}}</h1>
+  <div class="company">{{company_name}}</div>
+  <div>{{#url}}<a href="{{url}}">Original listing</a>{{/url}}{{#cv_url}} &middot; <a href="{{cv_url}}">CV made for this job</a>{{/cv_url}} &middot; Brief made {{today}}</div>
+</header>
+
+{{#note}}<div class="note">{{note}}</div>{{/note}}
+
+<section>
+  <h2>Key facts</h2>
+  <table>{{#facts}}<tr><td class="label">{{label}}</td><td>{{text}}</td></tr>{{/facts}}</table>
+</section>
+
+{{#summary}}<section><h2>The job in short</h2><p>{{summary}}</p></section>{{/summary}}
+{{#company.length}}<section><h2>The company (from the listing)</h2><ul>{{#company}}<li>{{text}}</li>{{/company}}</ul></section>{{/company.length}}
+{{#responsibilities.length}}<section><h2>What you would do</h2><ul>{{#responsibilities}}<li>{{text}}</li>{{/responsibilities}}</ul></section>{{/responsibilities.length}}
+{{#must_have.length}}<section><h2>Must have</h2><ul>{{#must_have}}<li>{{text}}</li>{{/must_have}}</ul></section>{{/must_have.length}}
+{{#nice_to_have.length}}<section><h2>Nice to have</h2><ul>{{#nice_to_have}}<li>{{text}}</li>{{/nice_to_have}}</ul></section>{{/nice_to_have.length}}
+{{#technologies}}<section><h2>Technologies named</h2><p>{{technologies}}</p></section>{{/technologies}}
+{{#benefits.length}}<section><h2>Benefits</h2><ul>{{#benefits}}<li>{{text}}</li>{{/benefits}}</ul></section>{{/benefits.length}}
+
+<section>
+  <h2>Your fit</h2>
+  {{#strengths}}<p><strong>Strengths:</strong> {{strengths}}</p>{{/strengths}}
+  {{#gaps}}<p><strong>Gaps to prepare for:</strong> {{gaps}}</p>{{/gaps}}
+</section>
+
+<section>
+  <h2>Interview preparation</h2>
+  <p class="suggested">Suggestions written by AI, not taken from the listing.</p>
+  {{#likely_questions.length}}<p class="lead">Questions you may be asked</p><ul>{{#likely_questions}}<li>{{.}}</li>{{/likely_questions}}</ul>{{/likely_questions.length}}
+  {{#questions_to_ask.length}}<p class="lead">Questions to ask them</p><ul>{{#questions_to_ask}}<li>{{.}}</li>{{/questions_to_ask}}</ul>{{/questions_to_ask.length}}
+  {{#research.length}}<p class="lead">Look up beforehand</p><ul>{{#research}}<li>{{.}}</li>{{/research}}</ul>{{/research.length}}
+</section>
+
+{{#paragraphs.length}}<section class="listing"><h2>Listing text as captured</h2>{{#paragraphs}}<p>{{.}}</p>{{/paragraphs}}</section>{{/paragraphs.length}}
+
+</body>
+</html>

@@ -441,14 +441,14 @@
     },
     {
       "parameters": {
-        "jsCode": "// Build the daily HTML digest: top 5 new jobs scoring >= 60, plus run stats.\nconst jobs = $('Parse score').all().map(i => i.json);\nconst MIN_SCORE = 60, TOP_N = 5;\nconst esc = s => String(s ?? '').replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]));\n\nconst top = jobs\n  .filter(j => Number.isInteger(j.score) && j.score >= MIN_SCORE)\n  .sort((a, b) => b.score - a.score)\n  .slice(0, TOP_N);\n\nconst scored = jobs.filter(j => Number.isInteger(j.score)).length;\nconst failed = jobs.length - scored;\nconst inTok = jobs.reduce((s, j) => s + (j.input_tokens || 0), 0);\nconst outTok = jobs.reduce((s, j) => s + (j.output_tokens || 0), 0);\n// claude-haiku-5-5: $0.10 per 1M input tokens, $0.50 per 1M output tokens.\nconst costUsd = (inTok * 0.10 + outTok * 0.50) / 1e6;\nconst cvRuns = (() => { try { return $('Generate CVs').all().map(i => i.json).filter(r => r.job_id); } catch (e) { return []; } })();\nconst cvById = Object.fromEntries(cvRuns.map(r => [r.job_id, r]));\nconst cvOk = cvRuns.filter(r => r.cv_ok), cvFailed = cvRuns.length - cvOk.length;\nconst cvOlder = cvOk.filter(r => !jobs.some(j => j.job_id === r.job_id)).length;\nconst cvCost = cvRuns.reduce((s, r) => s + (r.cv_cost_usd || 0), 0);\nconst cvIn = cvRuns.reduce((s, r) => s + (r.cv_input_tokens || 0), 0), cvOut = cvRuns.reduce((s, r) => s + (r.cv_output_tokens || 0), 0);\nconst cvLink = j => /^https:///i.test(cvById[j.job_id]?.cv_link ?? '') ? ` &middot; <a href=\"${esc(cvById[j.job_id].cv_link)}\">Tailored CV</a>` : '';\nconst day = $now.setZone('Europe/London').toFormat('ccc d LLL');\n\nconst card = j => `\n  <tr><td style=\"padding:12px 0;border-bottom:1px solid #e5e5e5\">\n    <div style=\"font-size:16px\"><b>${j.score}</b> &middot; ${/^https?:\\/\\//i.test(j.url ?? '') ? `<a href=\"${esc(j.url)}\">${esc(j.title)}</a>` : esc(j.title)}</div>\n    <div style=\"color:#555\">${esc(j.company || 'Company not stated')} &middot; ${esc(j.location)}${j.salary ? ' &middot; ' + esc(j.salary) : ''}${cvLink(j)}</div>\n    <div style=\"margin-top:4px\">${esc(j.reason)}</div>\n    <div style=\"margin-top:4px;color:#2e7d32\">✔ ${esc(j.matched_skills.join(', ') || '–')}</div>\n    <div style=\"color:#c62828\">✘ ${esc(j.missing_skills.join(', ') || '–')}</div>\n  </td></tr>`;\n\nconst body = top.length\n  ? `<table style=\"width:100%;border-collapse:collapse\">${top.map(card).join('')}</table>`\n  : `<p>No new jobs scored ${MIN_SCORE} or more today.</p>`;\n\nconst calls = name => { try { return $(name).all(); } catch (e) { return []; } };\nconst srcNote = [['Adzuna', 'Adzuna search'], ['Reed', 'Reed search']].map(([label, name]) => {\n  const c = calls(name), failedCalls = c.filter(i => i.json.error).length;\n  const n = jobs.filter(j => j.source === label.toLowerCase()).length;\n  return `${label}: ${n} new${failedCalls ? ` (${failedCalls}/${c.length} requests failed)` : ''}`;\n}).join(' · ');\n\nconst html = `<div style=\"font-family:Arial,sans-serif;max-width:640px\">\n  <h2 style=\"margin-bottom:4px\">Job digest – ${esc(day)}</h2>\n  <div style=\"color:#555\">${jobs.length} new jobs · ${scored} scored${failed ? ` · ${failed} failed to score` : ''} · ${top.length} at ${MIN_SCORE}+</div>\n  ${body}\n  <p style=\"color:#888;font-size:12px\">${esc(srcNote)}<br>Scoring tokens: ${inTok} in / ${outTok} out · est. $${costUsd.toFixed(4)}<br>Tailored CVs: ${cvOk.length} made${cvOlder ? ` (${cvOlder} for earlier jobs)` : ''}${cvFailed ? ` · ${cvFailed} failed (retried next run)` : ''} · ${cvIn} in / ${cvOut} out · est. $${cvCost.toFixed(4)}<br>Total est. cost $${(costUsd + cvCost).toFixed(4)} · full list in the Job Tracker sheet.</p>\n</div>`;\n\nconst subject = top.length\n  ? `Job digest: ${top.length} match${top.length > 1 ? 'es' : ''} (top ${top[0].score}) – ${day}`\n  : `Job digest: no strong matches – ${day}`;\n\nreturn [{ json: { subject, html, jobs_new: jobs.length, jobs_scored: scored, matches: top.length, input_tokens: inTok, output_tokens: outTok, cost_usd: costUsd, cvs_made: cvOk.length, cvs_failed: cvFailed, cv_cost_usd: cvCost } }];"
+        "jsCode": "// Build the daily HTML digest: top 5 new jobs scoring >= 60, plus run stats.\nconst jobs = $('Parse score').all().map(i => i.json);\nconst MIN_SCORE = 60, TOP_N = 5;\nconst esc = s => String(s ?? '').replace(/[&<>\"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]));\n\nconst top = jobs\n  .filter(j => Number.isInteger(j.score) && j.score >= MIN_SCORE)\n  .sort((a, b) => b.score - a.score)\n  .slice(0, TOP_N);\n\nconst scored = jobs.filter(j => Number.isInteger(j.score)).length;\nconst failed = jobs.length - scored;\nconst inTok = jobs.reduce((s, j) => s + (j.input_tokens || 0), 0);\nconst outTok = jobs.reduce((s, j) => s + (j.output_tokens || 0), 0);\n// claude-haiku-5-5: $0.10 per 1M input tokens, $0.50 per 1M output tokens.\nconst costUsd = (inTok * 0.10 + outTok * 0.50) / 1e6;\nconst cvRuns = (() => { try { return $('Generate CVs').all().map(i => i.json).filter(r => r.job_id); } catch (e) { return []; } })();\nconst cvById = Object.fromEntries(cvRuns.map(r => [r.job_id, r]));\nconst cvOk = cvRuns.filter(r => r.cv_ok), cvFailed = cvRuns.length - cvOk.length;\nconst cvOlder = cvOk.filter(r => !jobs.some(j => j.job_id === r.job_id)).length;\nconst cvCost = cvRuns.reduce((s, r) => s + (r.cv_cost_usd || 0), 0);\nconst cvIn = cvRuns.reduce((s, r) => s + (r.cv_input_tokens || 0), 0), cvOut = cvRuns.reduce((s, r) => s + (r.cv_output_tokens || 0), 0);\nconst briefRuns = (() => { try { return $('Generate briefs').all().map(i => i.json).filter(r => r.job_id); } catch (e) { return []; } })();\nconst briefById = Object.fromEntries(briefRuns.map(r => [r.job_id, r]));\nconst briefOk = briefRuns.filter(r => r.brief_ok).length, briefFailed = briefRuns.length - briefOk;\nconst briefCost = briefRuns.reduce((s, r) => s + (r.brief_cost_usd || 0), 0);\nconst link = (url, label) => /^https:\\/\\//i.test(url ?? '') ? ` &middot; <a href=\"${esc(url)}\">${label}</a>` : '';\nconst cvLink = j => link(cvById[j.job_id]?.cv_link, 'Tailored CV') + link(briefById[j.job_id]?.job_brief_link, 'Job brief');\nconst day = $now.setZone('Europe/London').toFormat('ccc d LLL');\n\nconst card = j => `\n  <tr><td style=\"padding:12px 0;border-bottom:1px solid #e5e5e5\">\n    <div style=\"font-size:16px\"><b>${j.score}</b> &middot; ${/^https?:\\/\\//i.test(j.url ?? '') ? `<a href=\"${esc(j.url)}\">${esc(j.title)}</a>` : esc(j.title)}</div>\n    <div style=\"color:#555\">${esc(j.company || 'Company not stated')} &middot; ${esc(j.location)}${j.salary ? ' &middot; ' + esc(j.salary) : ''}${cvLink(j)}</div>\n    <div style=\"margin-top:4px\">${esc(j.reason)}</div>\n    <div style=\"margin-top:4px;color:#2e7d32\">✔ ${esc(j.matched_skills.join(', ') || '–')}</div>\n    <div style=\"color:#c62828\">✘ ${esc(j.missing_skills.join(', ') || '–')}</div>\n  </td></tr>`;\n\nconst body = top.length\n  ? `<table style=\"width:100%;border-collapse:collapse\">${top.map(card).join('')}</table>`\n  : `<p>No new jobs scored ${MIN_SCORE} or more today.</p>`;\n\nconst calls = name => { try { return $(name).all(); } catch (e) { return []; } };\nconst srcNote = [['Adzuna', 'Adzuna search'], ['Reed', 'Reed search']].map(([label, name]) => {\n  const c = calls(name), failedCalls = c.filter(i => i.json.error).length;\n  const n = jobs.filter(j => j.source === label.toLowerCase()).length;\n  return `${label}: ${n} new${failedCalls ? ` (${failedCalls}/${c.length} requests failed)` : ''}`;\n}).join(' · ');\n\nconst html = `<div style=\"font-family:Arial,sans-serif;max-width:640px\">\n  <h2 style=\"margin-bottom:4px\">Job digest – ${esc(day)}</h2>\n  <div style=\"color:#555\">${jobs.length} new jobs · ${scored} scored${failed ? ` · ${failed} failed to score` : ''} · ${top.length} at ${MIN_SCORE}+</div>\n  ${body}\n  <p style=\"color:#888;font-size:12px\">${esc(srcNote)}<br>Scoring tokens: ${inTok} in / ${outTok} out · est. $${costUsd.toFixed(4)}<br>Tailored CVs: ${cvOk.length} made${cvOlder ? ` (${cvOlder} for earlier jobs)` : ''}${cvFailed ? ` · ${cvFailed} failed (retried next run)` : ''} · ${cvIn} in / ${cvOut} out · est. $${cvCost.toFixed(4)}<br>Job briefs: ${briefOk} made${briefFailed ? ` · ${briefFailed} failed (retried next run)` : ''} · est. $${briefCost.toFixed(4)}<br>Total est. cost $${(costUsd + cvCost + briefCost).toFixed(4)} · full list in the Job Tracker sheet.</p>\n</div>`;\n\nconst subject = top.length\n  ? `Job digest: ${top.length} match${top.length > 1 ? 'es' : ''} (top ${top[0].score}) – ${day}`\n  : `Job digest: no strong matches – ${day}`;\n\nreturn [{ json: { subject, html, jobs_new: jobs.length, jobs_scored: scored, matches: top.length, input_tokens: inTok, output_tokens: outTok, cost_usd: costUsd, cvs_made: cvOk.length, cvs_failed: cvFailed, cv_cost_usd: cvCost } }];"
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000021",
       "name": "Build digest",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4432,
+        4656,
         0
       ],
       "executeOnce": true
@@ -467,7 +467,7 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        4656,
+        4880,
         0
       ],
       "webhookId": "a7c1e0d2-5b44-4f1e-9c11-digest000001",
@@ -637,7 +637,7 @@
       "typeVersion": 2,
       "position": [
         4208,
-        -200
+        -400
       ]
     },
     {
@@ -714,7 +714,124 @@
       "typeVersion": 4.5,
       "position": [
         4432,
-        -200
+        -400
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8QeZAhAEn9k02vIY",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Jobs with a CV and no job brief yet: CVs made this run, plus older sheet rows.\n// \"Generate Job Brief\" applies the age limit and the cap.\nconst made = new Map($('Generate CVs').all().map(i => i.json).filter(r => r.job_id && r.cv_ok).map(r => [r.job_id, r.cv_link]));\nconst fresh = $('CV candidates').all().map(i => i.json).filter(j => made.has(j.job_id)).map(j => ({ ...j, cv_link: made.get(j.job_id) }));\nconst older = $('Read existing jobs').all().map(i => i.json)\n  .filter(r => r.job_id && !made.has(r.job_id) && String(r.cv_link ?? '').trim() && !String(r.job_brief_link ?? '').trim());\nreturn [...fresh, ...older].map(json => ({ json }));"
+      },
+      "id": "9d41b7e2-br00-4f6a-9c21-a00000000001",
+      "name": "Brief candidates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4208,
+        0
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "jobBriefPdf00001",
+          "mode": "id",
+          "cachedResultName": "Generate Job Brief"
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "9d41b7e2-br00-4f6a-9c21-a00000000002",
+      "name": "Generate briefs",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4432,
+        0
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sheet updates for the job_brief_link column (matched on job_id). Failures stay blank, so the next run retries.\nreturn $('Generate briefs').all().map(i => i.json).filter(r => r.job_id && r.brief_ok)\n  .map(r => ({ json: { job_id: r.job_id, job_brief_link: r.job_brief_link } }));"
+      },
+      "id": "9d41b7e2-br00-4f6a-9c21-a00000000003",
+      "name": "Brief sheet rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4656,
+        -192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Jobs",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "job_id"
+          ],
+          "schema": [
+            {
+              "id": "job_id",
+              "displayName": "job_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "job_brief_link",
+              "displayName": "job_brief_link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "id": "9d41b7e2-br00-4f6a-9c21-a00000000004",
+      "name": "Update brief column",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        4880,
+        -192
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -995,7 +1112,7 @@
             "index": 0
           },
           {
-            "node": "Build digest",
+            "node": "Brief candidates",
             "type": "main",
             "index": 0
           }
@@ -1007,6 +1124,44 @@
         [
           {
             "node": "Update CV columns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brief candidates": {
+      "main": [
+        [
+          {
+            "node": "Generate briefs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate briefs": {
+      "main": [
+        [
+          {
+            "node": "Brief sheet rows",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brief sheet rows": {
+      "main": [
+        [
+          {
+            "node": "Update brief column",
             "type": "main",
             "index": 0
           }
