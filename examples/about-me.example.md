@@ -40,6 +40,7 @@
 
 The generator picks the one that best matches the job title, or writes a close variant using only these words and the job's own title.
 
+- `[HL-05]` Software Developer | Full-Stack, .NET & Integrations
 - `[HL-01]` Software Developer | AI Automation & Integrations
 - `[HL-02]` Software Developer | n8n, LLM APIs & Integrations
 - `[HL-03]` Software Developer | Building AI automations with n8n & LLM APIs
@@ -100,7 +101,7 @@ Grouped for the CV. The generator may reorder groups and items to match the job,
 - `[YFT-09]` Restructured the marketing budget, replacing an outsourced content contract with an in-house content workflow and moving spend to local advertising.
 - `[YFT-10]` Work with the primary director and shareholders on business strategy and team coordination.
 
-### Founder & Developer, Thornspire Games Ltd
+### Co-Founder & Developer, Thornspire Games Ltd
 *Independent games studio, remote | Nov 2023 – Present*
 
 - `[TG-01]` Co-founded and run a two-person independent software studio, serving as primary developer across commercial products.
@@ -144,14 +145,16 @@ Grouped for the CV. The generator may reorder groups and items to match the job,
 ### AI Job-Search Assistant
 *n8n, Claude API, Adzuna and Reed APIs, Google OAuth2, webhooks, Docker | github.com/WilliamHepton/ai-job-search-assistant*
 
-- `[JS-01]` Three self-hosted n8n workflows (about 30 nodes) running in Docker.
-- `[JS-10]` Runs as a multi-container Docker Compose setup: n8n and Gotenberg (HTML to PDF) in separate containers, with pinned image versions, read-only mounts, a persistent data volume and Gotenberg reachable only on the internal network.
-- `[JS-02]` A daily scan pulls UK job listings from two APIs (Adzuna, Reed) across 7 search terms and 2 location modes, merges them, removes duplicates across sources (by title and company) and against previous runs, and drops stale and unsuitable listings before spending any tokens.
+- `[JS-01]` Five self-hosted n8n workflows (about 100 nodes). A daily scan searches two APIs (Reed and Adzuna), removes duplicates, ranks the results and scores up to 50 jobs per run with Claude.
+- `[JS-10]` Runs as a multi-container Docker Compose setup: n8n and Gotenberg (HTML to PDF) in separate containers, with pinned image versions, read-only mounts and an internal-only PDF service.
+- `[JS-11]` A validator checks every CV line against a fact list, to block invented claims. Automated tests run the real workflow code.
+- `[JS-12]` Calculates job distances in code, detects remote, hybrid or on-site wording, and enforces score limits instead of trusting the model.
+- `[JS-02]` Produces a tailored CV and an interview brief for good matches. Results go to Google Sheets and an email digest.
 - `[JS-03]` Claude scores each job against my profile from 0 to 100 with matched skills, missing skills and a reason. Output is guaranteed machine-readable using structured JSON outputs plus a validating fallback parser, so one bad response never breaks the run.
 - `[JS-04]` Results are logged to Google Sheets, and the top matches are emailed as an HTML digest with token and cost stats.
-- `[JS-05]` Per-source health checks: if one API is down the run carries on and reports it; if both fail, an alert is sent. A separate error workflow emails details of any failure.
+- `[JS-05]` Structured JSON outputs, retries, per-source health checks and error alerts keep it running when an API fails. Costs under £1 a month to run.
 - `[JS-06]` A token-protected webhook scores jobs submitted by hand, validates input and returns JSON.
-- `[JS-07]` Built for reliability and cost: retries with waits, rate-limited batching, a 40-job cap per run and a spend limit, keeping cost well under £1 a month.
+- `[JS-07]` Built for reliability and cost: retries with waits, rate-limited batching, a 50-job cap per run and a spend limit. Costs under £1 a month to run.
 - `[JS-08]` Security: least-privilege OAuth scopes, plain-text sheet writes to block formula injection, escaped email output, prompt-injection-aware design, and no secrets in the public repo.
 - `[JS-09]` Handled a real security incident: reset an accidentally committed OAuth secret, removed it from git history and added safeguards to stop it recurring. (Interviews only: never put this on the CV.)
 - `[JS-TODO]` TODO: time saved per day once the before/after measurement is done

@@ -43,11 +43,11 @@ An LLM writing CVs freely will sooner or later claim a skill I don't have. So he
   - A reworded bullet may not add a **number** the original doesn't contain, and may not grow much longer. If it fails, the original wording is used.
   - The headline must start "Software Developer |" and use only words from the headline options or the job title.
   - A bullet may not name a technology its own fact does not name. A last check reports any skill on the CV that is not in the profile.
-  - Code sets the skill layout: Docker and Git on a "Tools and DevOps" line, and a fixed order for Microsoft-stack jobs.
+  - Code sets the skill layout: Docker and Git on a "Tools and DevOps" line, groups in the profile's order, and a fixed order for Microsoft-stack jobs. Notes in the profile set default bullets per role.
   - If a role ends up with no valid bullets, its original bullets are used. Roles are always shown newest first.
   - [`tests/validate-cv.test.js`](tests/validate-cv.test.js) runs the real node code against a response that tries all of these tricks.
 - **Prompt injection:** job descriptions are untrusted text. The model has no tools, must answer in the fixed schema, and is told to ignore instructions inside the listing. The validator also catches anything that slips through.
-- **Rendering:** a small Mustache-style renderer in a Code node fills [`templates/cv-template.html`](templates/cv-template.html), escaping all text. **Gotenberg** (headless Chromium, in its own container with no published port) turns it into an A4 PDF. If the PDF is over 2 pages, the earlier-roles line, then the Baccalauréat, then bullets from the longest entry are dropped, and it's rendered once more.
+- **Rendering:** a small Mustache-style renderer in a Code node fills [`templates/cv-template.html`](templates/cv-template.html), escaping all text. **Gotenberg** (headless Chromium, in its own container with no published port) turns it into an A4 PDF. If the PDF is over 2 pages, the earlier roles, then the Baccalauréat, then bullets from the longest entry are dropped, and it's rendered once more.
 - **Storage:** the PDF is uploaded to a `Tailored CVs` folder in Google Drive as `Name_CV_Company_JobTitle_YYYY-MM-DD.pdf`. The sheet gets `cv_link`, `cv_generated_at` and `tailoring_notes` (what the model emphasised and why, plus anything the validator fixed).
 
 Settings (threshold 50, at most 10 CVs per run, 14-day backfill, 3 attempts per job) live in one **CV config** node.

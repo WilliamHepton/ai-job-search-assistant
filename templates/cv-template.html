@@ -41,7 +41,9 @@
   ul { margin: 2px 0 6px; padding-left: 16px; }
   li { margin-bottom: 2px; }
   .skills li { list-style: none; margin-left: -16px; }
-  .entry { margin-bottom: 7px; page-break-inside: avoid; }
+  .entry { margin-bottom: 8px; }  /* may split across pages, so page 1 fills up */
+  .entry-head, .entry-sub, h2 { page-break-after: avoid; }
+  li { page-break-inside: avoid; }
   .entry-head { display: flex; justify-content: space-between; gap: 8px; }
   .entry-title { font-weight: 700; }
   .entry-dates { white-space: nowrap; color: #333; }
@@ -55,13 +57,8 @@
   <h1>{{name}}</h1>
   <div class="headline">{{headline}}</div>
   <div class="contact">
-    <span>{{location}}</span>
-    <span>{{email}}</span>
-    <span>{{phone}}</span>
-    <span>{{linkedin}}</span>
-    <span>{{github}}</span>
-    <span>{{languages}}</span>
-    {{#licence}}<span>{{licence}}</span>{{/licence}}
+    <div><span>{{location}}</span><span>{{email}}</span><span>{{phone}}</span>{{#licence}}<span>{{licence}}</span>{{/licence}}</div>
+    <div><span>{{linkedin}}</span><span>{{github}}</span><span>{{languages}}</span></div>
   </div>
 </header>
 
@@ -95,9 +92,12 @@
     </ul>
   </div>
   {{/experience}}
-  {{#earlier}}
-  <p><strong>Earlier:</strong> {{earlier}}</p>
-  {{/earlier}}
+  {{#earlier.length}}
+  <div class="entry">
+    <div class="entry-head"><span class="entry-title">Earlier</span></div>
+    <ul>{{#earlier}}<li>{{.}}</li>{{/earlier}}</ul>
+  </div>
+  {{/earlier.length}}
 </section>
 
 <section>

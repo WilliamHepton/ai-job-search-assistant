@@ -77,6 +77,7 @@ const runNode = async (code, ctx) => {
   assert.deepEqual(cv.experience.map(e => e.source), ['YFT', 'TG', 'PZ', 'UW'], 'roles in date order, newest first');
   assert.ok(cv.experience.find(e => e.source === 'TG').bullets.every(b => b.source_id.startsWith('TG-')), 'TG falls back to its own bullets');
   assert.ok(!html.includes('{{'), 'template fully rendered');
+  assert.ok(Array.isArray(cv.earlier) && cv.earlier.length === 2 && cv.earlier.every(x => html.includes(`<li>${x}</li>`)), 'earlier roles printed as bullets');
   assert.ok(html.includes('alex@example.com'), 'contact details come from the file');
 
   // 4. A Microsoft-stack job: skill layout, n8n wording, and tech that the cited fact doesn't name.
@@ -101,6 +102,8 @@ const runNode = async (code, ctx) => {
   assert.match(group('Programming'), /^C#, \.NET, SQL(, PostgreSQL)?(, TypeScript)?, JavaScript[^,]*, C\+\+/, 'Microsoft-stack order');
   assert.ok(!/\bJava\b|MongoDB|Docker|Git/.test(group('Programming')), 'Java, MongoDB and tools not under Programming');
   assert.equal(group('Tools and DevOps'), 'Git/GitHub, Docker');
+  const order = cv2.skills.map(s => profile.skills.findIndex(k => k.group === s.group)).filter(i => i >= 0);
+  assert.deepEqual(order, [...order].sort((a, b) => a - b), 'skill groups in the profile order');
   assert.ok(group('Automation and integration').startsWith('workflow automation in n8n (same model as Power Automate'), 'fixed n8n wording');
   assert.equal(html2.split('Power Automate').length, 2, 'Power Automate only inside the fixed wording');
   assert.ok(!html2.includes('Azure') || !profile.notLearned.includes('Azure'), 'Azure blocked when it is on the not-learned list');
