@@ -77,6 +77,7 @@ const runNode = async (code, ctx) => {
   assert.deepEqual(cv.experience.map(e => e.source), ['YFT', 'TG', 'PZ', 'UW'], 'roles in date order, newest first');
   assert.ok(cv.experience.find(e => e.source === 'TG').bullets.every(b => b.source_id.startsWith('TG-')), 'TG falls back to its own bullets');
   assert.ok(!html.includes('{{'), 'template fully rendered');
+  assert.ok(html.includes('font-variant-ligatures: none'), 'ligatures are off, so checkers can read the text');
   assert.ok(Array.isArray(cv.earlier) && cv.earlier.length === 2 && cv.earlier.every(x => html.includes(`<li>${x}</li>`)), 'earlier roles printed as bullets');
   assert.ok(html.includes('alex@example.com'), 'contact details come from the file');
 

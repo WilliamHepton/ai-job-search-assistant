@@ -23,6 +23,8 @@
   .lead { font-weight: 600; page-break-after: avoid; }
   .listing p { font-size: 9.5pt; }
   a { color: #1f4e79; }
+  /* No joined letters (ti, fl, ff): CV checkers misread them in the PDF text. */
+  body { font-variant-ligatures: none; font-feature-settings: "liga" 0, "clig" 0, "dlig" 0; }
 </style>
 </head>
 <body>

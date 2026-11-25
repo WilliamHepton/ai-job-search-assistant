@@ -49,6 +49,8 @@
   .entry-dates { white-space: nowrap; color: #333; }
   .entry-sub { font-style: italic; color: #444; font-size: 9.8pt; }
   a { color: #1f4e79; text-decoration: none; }
+  /* No joined letters (ti, fl, ff): CV checkers misread them in the PDF text. */
+  body { font-variant-ligatures: none; font-feature-settings: "liga" 0, "clig" 0, "dlig" 0; }
 </style>
 </head>
 <body>

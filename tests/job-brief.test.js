@@ -34,6 +34,7 @@ const raw = {
   assert.ok(r.html.includes('5 years UK residency') && !r.html.includes('10 years'), 'changed number: the listing\'s words are printed');
   assert.ok(!r.html.includes('Founded') && !r.html.includes('Rust'), 'facts without a real quote are dropped');
   assert.ok(r.html.includes('Uses C#'), 'real fact kept');
+  assert.ok(r.html.includes('font-variant-ligatures: none'), 'ligatures are off, so checkers can read the text');
   assert.ok(!r.html.includes('javascript:') && !r.html.includes('<script') && !r.html.includes('Developer <b>'), 'unsafe link removed, text escaped');
   assert.ok(r.html.includes('Only a short extract'), 'extract warning');
   assert.equal(r.json.file_name, 'Job_Brief_Example_Ltd_Developer_b_2026-01-02.pdf');
