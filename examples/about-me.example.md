@@ -145,6 +145,7 @@ Grouped for the CV. The generator may reorder groups and items to match the job,
 *n8n, Claude API, Adzuna and Reed APIs, Google OAuth2, webhooks, Docker | github.com/WilliamHepton/ai-job-search-assistant*
 
 - `[JS-01]` Three self-hosted n8n workflows (about 30 nodes) running in Docker.
+- `[JS-10]` Runs as a multi-container Docker Compose setup: n8n and Gotenberg (HTML to PDF) in separate containers, with pinned image versions, read-only mounts, a persistent data volume and Gotenberg reachable only on the internal network.
 - `[JS-02]` A daily scan pulls UK job listings from two APIs (Adzuna, Reed) across 7 search terms and 2 location modes, merges them, removes duplicates across sources (by title and company) and against previous runs, and drops stale and unsuitable listings before spending any tokens.
 - `[JS-03]` Claude scores each job against my profile from 0 to 100 with matched skills, missing skills and a reason. Output is guaranteed machine-readable using structured JSON outputs plus a validating fallback parser, so one bad response never breaks the run.
 - `[JS-04]` Results are logged to Google Sheets, and the top matches are emailed as an HTML digest with token and cost stats.

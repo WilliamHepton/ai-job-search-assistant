@@ -12,20 +12,21 @@ Job hunting by hand means opening several job sites every day, skimming dozens o
 
 ## How it works
 
-Every day at 11:30, n8n:
+Every day at 10:30, n8n:
 
-1. **Fetches** new UK listings from the **Adzuna** and **Reed** APIs for 12 search terms based on my target roles (implementation, integration and automation first), both near Malvern and remote. Titles that are clearly wrong (too senior, or trades such as electrical, civil or HVAC) are dropped before scoring.
+1. **Fetches** new UK listings from the **Adzuna** and **Reed** APIs for role-based search terms (full-stack TypeScript/React and .NET first, then integration and automation), both near Malvern and remote, from the last 4 days. Titles that are clearly wrong (too senior, trades, Java, Salesforce, embedded) are dropped before scoring. Filters match whole words, so "Java" does not drop "JavaScript".
 2. **De-duplicates** them within the run and against jobs already in the sheet, including the same job listed on both sites (matched on title + company).
-3. **Scores** each new job with Claude against my profile: match score 0–100, matched and missing skills, and a one-line reason. The output is validated JSON.
-4. **Logs** every job to a Google Sheet (OAuth2).
-5. **Writes a tailored CV** (PDF) for every job scoring 50 or more, saves it to Google Drive and links it in the sheet. See below.
-6. **Makes a job brief** (PDF) for every job that gets a CV, to re-read before an interview, and links it in the sheet.
-7. **Emails** a Gmail digest of the top 5 matches, each with links to its tailored CV and job brief, plus token and cost stats.
+3. **Checks location in code, ranks and caps:** postcodes.io turns each job's place into a distance, the listing text gives remote/hybrid/on-site, and the best 50 (title match, then location) go forward. Reed jobs get their full listing text.
+4. **Scores** each new job with Claude against my profile: match score 0–100, matched and missing skills, and a one-line reason. The output is validated JSON.
+5. **Logs** every job to a Google Sheet (OAuth2).
+6. **Writes a tailored CV** (PDF) for every job scoring 50 or more, saves it to Google Drive and links it in the sheet. See below.
+7. **Makes a job brief** (PDF) for every job that gets a CV, to re-read before an interview, and links it in the sheet.
+8. **Emails** a Gmail digest of the top 5 matches, each with links to its tailored CV and job brief, plus token and cost stats.
 
 Also:
 
-8. A **webhook** scores a job I paste in by hand, logs it and returns the score, the CV link and the brief link as JSON.
-9. An **error workflow** emails me if any run fails.
+9. A **webhook** scores a job I paste in by hand, logs it and returns the score, the CV link and the brief link as JSON.
+10. An **error workflow** emails me if any run fails.
 
 See [docs/architecture.md](docs/architecture.md) for the diagrams.
 
@@ -65,6 +66,7 @@ Listings often disappear before the interview, so each job with a CV also gets a
 
 - **n8n** (self-hosted in Docker Compose), with **Gotenberg** for HTML → PDF
 - **Adzuna API** and **Reed API** for job data
+- **postcodes.io** (free, no key) for distances; only job locations are sent
 - **Anthropic Claude API** (`claude-haiku-5-5`) with structured JSON outputs and prompt caching
 - **Google Sheets, Gmail and Drive** via OAuth2
 - **Webhooks** with header-token auth
@@ -72,11 +74,12 @@ Listings often disappear before the interview, so each job with a CV also gets a
 ## Design decisions
 
 - **De-duplication:** by `job_id` within the run and against the sheet, plus a normalised title + company key, because Adzuna also lists Reed jobs.
+- **Distances are calculated, not guessed:** the model once put Woking "20 miles" from Malvern (it is 93). Code now works out the distance and the limits (45 miles hybrid, 30 on-site), and also enforces the score caps, because the model would say "capped" and still score higher.
 - **JSON validation and fallback:** structured outputs guarantee the shape. A parser still checks every value, so one bad response is logged as a parse error instead of breaking the run.
 - **Retries and rate limits:** every API call retries 3 times with a 5-second wait, and requests are sent in small timed batches.
 - **One shared CV workflow:** the daily scan and the webhook both call the same sub-workflow, so the CV logic exists once.
 - **Failures never stop the run:** if a CV fails (API error, refusal, failed PDF or upload), the reason goes into `tailoring_notes` and the next run retries it, up to 3 times. If one job API is down, the other still runs and the digest says so.
-- **Cost caps:** at most 40 jobs scored and 10 CVs per run, plus a spend limit on the API key.
+- **Cost caps:** at most 50 jobs scored and 10 CVs per run, plus a spend limit on the API key.
 - **Error workflow:** any failed run emails me the failing node and the error.
 
 ## Security and privacy
@@ -120,7 +123,7 @@ _TODO: before/after minutes per day, jobs reviewed per day, cost per month._
    - a header token for the webhook
 5. Import the workflows from `workflows/`, set your sheet URL and email address, and publish them.
 6. Add these column headers to your sheet: `job_id, date_found, source, title, company, location, salary, url, score, matched_skills, missing_skills, reason, status, cv_link, cv_generated_at, tailoring_notes, job_brief_link`.
-7. Run the tests: `node tests/validate-cv.test.js` and `node tests/job-brief.test.js`.
+7. Run the tests: `node tests/job-search.test.js`, `node tests/validate-cv.test.js` and `node tests/job-brief.test.js`.
 
 ## Limitations and next steps
 

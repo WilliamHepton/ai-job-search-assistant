@@ -29,7 +29,7 @@
     {
       "parameters": {
         "mode": "raw",
-        "jsonOutput": "{\n  \"model\": \"claude-haiku-5-5\",\n  \"candidate_profile\": \"Software developer, BSc Computing and Software Development (2:1). Based near Malvern, UK;\\nwants remote or hybrid within 30 miles. Skills: C#, .NET, C++, JavaScript, Java, SQL,\\nMongoDB, REST APIs, webhooks, third-party API integration, n8n, LLM APIs (Claude),\\nretrieval-based AI assistants, AI-assisted development (Claude Code). Experience:\\n3 years running an indie game studio (2 commercial releases), voluntary finance and\\noperations director of a small gym (systems, software, finances), built a full gym\\nmanagement platform (app, staff portal, backend) and an AI FAQ assistant. Short junior\\nfull-stack developer roles. Seeking AI automation / implementation roles. Not seeking\\npeople-management or senior leadership roles.\"\n}",
+        "jsonOutput": "{\n  \"model\": \"claude-haiku-5-5\",\n  \"candidate_profile\": \"Software developer, BSc (Hons) Computing and Software Development (2:1), plus a French BTS\\n(HND level) in business application development. Full right to work in the UK, full UK driving\\nlicence, fluent English and French, available immediately.\\n\\nSKILLS\\nProgramming: C#, .NET (any version, including .NET Core), C++, TypeScript, JavaScript, Java, SQL, PostgreSQL, MongoDB, HTML/CSS, Git/GitHub.\\nWeb, mobile and cloud: React Native / Expo (mobile and web export), Supabase (Auth, row-level security,\\nedge functions), Cloudflare, serverless backends, Android.\\nContainers: Docker and Docker Compose.\\nIntegration and automation: n8n (self-hosted), REST APIs, webhooks with token authentication, Google OAuth2,\\nthird-party API integration, data pipelines, JSON, retries, error workflows and alerting.\\nAI: Claude API (structured JSON outputs), prompt design, retrieval-based FAQ assistant, LLM cost control,\\nprompt-injection handling, AI-assisted development (Claude Code, ChatGPT).\\nSecurity: least-privilege OAuth scopes, secrets management, input sanitising.\\nDelivery: end-to-end project ownership, requirements and process analysis, choosing and rolling out business\\nsoftware, technical documentation for non-technical users, managing contractors.\\nOther: Unreal Engine 5, Godot, small-business finance and payroll.\\n\\nNOT LEARNED (missing only if the job asks for it): Make, Zapier, Power Automate, Power Platform, Power BI, Azure, ASP.NET,\\nCI/CD, Microsoft 365 Copilot, Copilot Studio, Python, MCP / AI agents with tool calling, Kubernetes, GitHub Copilot.\\n\\nEXPERIENCE\\n- Commercial: junior full-stack developer in C#/.NET on workforce management software (5 months, 2020), a\\n  full-stack internship (3 months, 2020), and earlier IT technician and helpdesk internships.\\n- Since Nov 2023: co-founder and primary developer of a two-person game studio; two commercial releases\\n  (one in Unreal Engine 5 / C++ with full ownership), both rated Very Positive on Steam; hired 4 contractors.\\n- Since May 2026: voluntary finance and operations director of a small gym (70+ members), leading its software.\\n  Built a full gym management platform (React Native app, staff web portal, TypeScript and SQL on Supabase and\\n  Cloudflare; built and tested, not live yet), the gym website and an AI FAQ assistant that is live on it.\\n- Personal project: AI job-search assistant in n8n with the Claude API and two job APIs, running as a\\n  multi-container Docker Compose setup, with validated outputs, error alerts and tests (public on GitHub).\\n- No paid automation, consulting or client work yet.\\n\\nLOOKING FOR, in priority order\\n1. Full-stack developer (TypeScript, React, React Native); .NET / C# developer;\\n2. Integration or API developer, automation developer, implementation specialist or consultant.\\nSaaS, gym and fitness software companies are a good domain fit. Prefers hands-on building work.\\nNot seeking people-management, pure change-management or senior leadership roles.\\nLocation: based near Malvern, UK. Fully remote (UK), hybrid within 45 miles, or on-site within 30 miles.\",\n  \"home\": {\n    \"lat\": 52.11,\n    \"lon\": -2.33\n  },\n  \"hybrid_miles\": 45,\n  \"onsite_miles\": 30\n}",
         "options": {}
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000024",
@@ -90,14 +90,14 @@
     },
     {
       "parameters": {
-        "jsCode": "// Build one Claude Messages API request per job.\n// Structured outputs (output_config.format) make the response match the schema.\nconst cfg = $('Scoring config').first().json;\n\nconst SYSTEM_PROMPT = `You are a recruitment screening assistant. You compare one job listing against one\ncandidate profile and return ONLY valid JSON, no prose, no code fences.\n\nScoring guide:\n- 80–100: strong fit on core skills, level and location/remote\n- 60–79: good fit with 1–2 learnable gaps\n- 40–59: partial fit, several gaps\n- 0–39: poor fit or wrong seniority/location\n\nRules:\n- Judge only on the information given. Do not invent requirements.\n- If salary is missing, do not penalise.\n- Penalise roles requiring 5+ years in a specific tool, people-management of large\n  teams, or on-site work more than 30 miles from Malvern, UK.\n- Prefer hands-on automation/building roles over pure change-management roles.\n- matched_skills and missing_skills: up to 6 short strings each.\n- reason: one sentence, max 25 words.`;\n\nconst SCHEMA = {\n  type: 'object',\n  properties: {\n    score: { type: 'integer', description: 'Match score 0-100' },\n    matched_skills: { type: 'array', items: { type: 'string' } },\n    missing_skills: { type: 'array', items: { type: 'string' } },\n    seniority_fit: { type: 'string', enum: ['junior', 'mid', 'senior', 'unclear'] },\n    remote_or_local_ok: { type: 'boolean' },\n    reason: { type: 'string' },\n  },\n  required: ['score', 'matched_skills', 'missing_skills', 'seniority_fit', 'remote_or_local_ok', 'reason'],\n  additionalProperties: false,\n};\n\nreturn $input.all().map(i => {\n  const j = i.json;\n  const userMessage = [\n    'CANDIDATE PROFILE:',\n    cfg.candidate_profile,\n    '',\n    'JOB LISTING:',\n    `Title: ${j.title}`,\n    `Company: ${j.company || 'Not stated'}`,\n    `Location: ${j.location || 'Not stated'}`,\n    `Salary: ${j.salary || 'Not stated'}`,\n    'Description:',\n    j.description || 'Not provided',\n  ].join('\\n');\n\n  return { json: {\n    ...j,\n    claude_request: {\n      model: cfg.model,\n      max_tokens: 2000,\n      system: SYSTEM_PROMPT,\n      output_config: { effort: 'low', format: { type: 'json_schema', schema: SCHEMA } },\n      messages: [{ role: 'user', content: userMessage }],\n    },\n  }};\n});"
+        "jsCode": "// Build one Claude Messages API request per job.\n// Structured outputs (output_config.format) make the response match the schema.\nconst cfg = $('Scoring config').first().json;\n\nconst SYSTEM_PROMPT = `You are a recruitment screening assistant. You compare one job listing against one\ncandidate profile and return ONLY valid JSON, no prose, no code fences.\n\nScoring guide:\n- 80–100: strong fit on core skills, level and location/remote\n- 60–79: good fit with 1–2 learnable gaps\n- 40–59: partial fit, several gaps\n- 0–39: poor fit or wrong seniority/location\n\nRules:\n- Judge only on the information given. Do not invent requirements.\n- If salary is missing, do not penalise.\n- Penalise roles requiring 5+ years in a specific tool, or people-management of large teams.\n- Location: \"Location check\" was worked out by code. Use it as given. Never estimate distances\n  or work patterns yourself. \"ok\" or \"possible\": do not reduce the score for location.\n  \"unknown\": at most a small reduction. \"probably too far\": score at most 45.\n  \"too far\": score at most 35. remote_or_local_ok is true only for \"ok\" or \"possible\".\n- Prefer full-stack TypeScript/React/React Native, .NET/C#, and API/integration roles.\n- Treat AI/automation work as a bonus, not a requirement.\n- Penalise roles centred on Java, Python, Salesforce, embedded or industrial automation.\n- matched_skills: skills that the listing asks for AND the profile lists. Nothing else.\n- missing_skills: skills that the listing asks for and the profile does not list. Never add a skill\n  the listing does not mention, even if it is under NOT LEARNED.\n- A framework is separate from its language: C# or .NET does not cover ASP.NET or Blazor. But if the\n  candidate knows the language, count a missing framework as a small learnable gap.\n- matched_skills and missing_skills: up to 6 short strings each.\n- reason: one sentence, max 25 words.`;\n\nconst SCHEMA = {\n  type: 'object',\n  properties: {\n    score: { type: 'integer', description: 'Match score 0-100' },\n    matched_skills: { type: 'array', items: { type: 'string' } },\n    missing_skills: { type: 'array', items: { type: 'string' } },\n    seniority_fit: { type: 'string', enum: ['junior', 'mid', 'senior', 'unclear'] },\n    remote_or_local_ok: { type: 'boolean' },\n    reason: { type: 'string' },\n  },\n  required: ['score', 'matched_skills', 'missing_skills', 'seniority_fit', 'remote_or_local_ok', 'reason'],\n  additionalProperties: false,\n};\n\n// ===== Location helpers (same code wherever a job's location is judged) =====\nconst geoKey = loc => String(loc ?? '').split(/[,(]/)[0].trim();\n// \"GU212JX\" or \"GL50\" -> outcode; anything else is a place name.\nconst outcodeOf = s => {\n  const t = s.toUpperCase().replace(/\\s+/g, '');\n  return /^([A-Z]{1,2}\\d[A-Z\\d]?)(\\d[A-Z]{2})$/.exec(t)?.[1] ?? (/^[A-Z]{1,2}\\d[A-Z\\d]?$/.test(t) ? t : null);\n};\nconst geoUrl = key => outcodeOf(key)\n  ? 'https://api.postcodes.io/outcodes/' + outcodeOf(key)\n  : 'https://api.postcodes.io/places?limit=5&q=' + encodeURIComponent(key);\nconst geoPoint = resp => {\n  const r = resp?.result;\n  const p = Array.isArray(r) ? ['City', 'Town', 'Suburban Area', 'Village'].map(t => r.find(x => x.local_type === t)).find(Boolean) : r;\n  return p && p.latitude != null ? { lat: Number(p.latitude), lon: Number(p.longitude) } : null;\n};\n// Straight-line miles.\nconst milesBetween = (a, b) => {\n  const rad = x => x * Math.PI / 180;\n  const h = Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lon - a.lon) / 2) ** 2;\n  return Math.round(2 * 3958.8 * Math.asin(Math.sqrt(h)));\n};\nconst isCountry = key => /^(|uk|united kingdom|england|scotland|wales|great britain|remote|nationwide|home.?based)$/i.test(key);\n// remote / remote offered / hybrid / on-site / unclear, from the words of the listing.\nconst workMode = job => {\n  const head = `${job.title ?? ''} | ${job.location ?? ''}`, text = `${head} | ${job.description ?? ''}`;\n  const strong = /\\b(fully|100%|completely|entirely|permanently)[ -]remote\\b|\\bremote[ -](first|only|based)\\b|\\bbased remotely\\b|\\bremote \\(?(uk|within the uk)\\b|\\b(location|working|work pattern)\\s*[:-]?\\s*(predominantly |mostly |mainly )?remote\\b|\\b(predominantly|mostly|mainly) remote\\b/i;\n  const start = String(job.description ?? '').slice(0, 200), offered = /\\/ ?remote working\\b|\\bremote (working|work) (is )?(available|possible|offered|considered)\\b/i;\n  if (/\\bremote\\b/i.test(head) && !/\\b(no|not) remote\\b/i.test(head) && !/hybrid/i.test(head)) return 'remote';\n  if (/\\(remote\\b[^)]*\\)/i.test(start)) return 'remote';\n  if (strong.test(text) && !/\\b(no|not) (fully|100%|completely) remote\\b/i.test(text)) return 'remote';\n  if (/\\bhybrid\\b(?![ -]?(cloud|infrastructure|environment|mobile|app|azure|identity|network|model of))/i.test(text) || /\\b(one|two|three|four|[1-4])(\\s*(-|to|–)\\s*[1-5])? days?( a| per| each)?( week)? ?(in|at|on|from)[ -](the |our )?(office|site|home)/i.test(text)) return 'hybrid';\n  if (offered.test(text)) return 'remote offered';\n  if (/\\b(on[- ]?site|office[- ]based|in[- ]office|in[- ]person)\\b/i.test(text) && !/\\bremote\\b/i.test(text)) return 'on-site';\n  return 'unclear';\n};\nconst locationVerdict = (mode, miles, c) => {\n  const hy = c.hybrid_miles, on = c.onsite_miles;\n  if (mode === 'remote') return 'ok';\n  if (mode === 'remote offered') return miles != null && miles <= on ? 'ok' : 'possible';\n  if (miles == null) return 'unknown';\n  if (miles > hy) return mode === 'unclear' ? 'probably too far' : 'too far';\n  if (mode === 'hybrid' || miles <= on) return 'ok';\n  return mode === 'on-site' ? 'too far' : 'possible';\n};\n// The place lookup covers Great Britain only.\nconst NI = { lat: 54.6, lon: -5.93 };\nconst locate = (job, point, c) => {\n  if (!point && /northern ireland|\\bbelfast\\b|\\bcounty antrim\\b/i.test(job.location ?? '')) point = NI;\n  const miles = point ? milesBetween(c.home, point) : null, mode = workMode(job);\n  return { work_mode: mode, miles, location_verdict: locationVerdict(mode, miles, c) };\n};\n// ===== End of location helpers =====\nconst point = geoPoint($input.first().json);\nreturn $('Validate input').all().map(i => {\n  const j = { ...i.json, ...locate(i.json, point, cfg) };\n  const userMessage = [\n    'CANDIDATE PROFILE:',\n    cfg.candidate_profile,\n    '',\n    'JOB LISTING:',\n    `Title: ${j.title}`,\n    `Company: ${j.company || 'Not stated'}`,\n    `Location: ${j.location || 'Not stated'}`,\n    `Salary: ${j.salary || 'Not stated'}`,\n    `Location check: ${j.location_verdict ?? 'unknown'} (work pattern: ${j.work_mode ?? 'unclear'}; ${j.miles == null ? 'distance unknown' : j.miles + ' miles from home'})`,\n    'Description:',\n    String(j.description || 'Not provided').slice(0, 6000),\n  ].join('\\n');\n\n  return { json: {\n    ...j,\n    claude_request: {\n      model: cfg.model,\n      max_tokens: 2000,\n      system: SYSTEM_PROMPT,\n      output_config: { effort: 'low', format: { type: 'json_schema', schema: SCHEMA } },\n      messages: [{ role: 'user', content: userMessage }],\n    },\n  }};\n});"
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000027",
       "name": "Build Claude request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        880,
+        1328,
         -96
       ]
     },
@@ -128,7 +128,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1104,
+        1552,
         -96
       ],
       "retryOnFail": true,
@@ -143,14 +143,14 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parse and validate each Claude response. One bad response never breaks the run:\n// it falls back to score = null with the reason recorded.\nconst jobs = $('Build Claude request').all();\n\nconst fallback = (why) => ({\n  score: null, matched_skills: [], missing_skills: [],\n  seniority_fit: 'unclear', remote_or_local_ok: null, reason: `parse error: ${why}`,\n});\n\nconst parse = (resp) => {\n  if (!resp || resp.error) {\n    const e = resp?.error;\n    return fallback(typeof e === 'string' ? e : (e?.message ?? 'request failed'));\n  }\n  if (resp.stop_reason === 'refusal') return fallback('model refused');\n  if (resp.stop_reason === 'max_tokens') return fallback('response cut off');\n  const text = (resp.content ?? []).find(b => b.type === 'text')?.text;\n  if (!text) return fallback('no text in response');\n  let data;\n  try {\n    data = JSON.parse(text.replace(/^\\s*```(?:json)?\\s*|\\s*```\\s*$/g, ''));\n  } catch (e) {\n    return fallback('invalid JSON');\n  }\n  if (!Number.isInteger(data.score) || data.score < 0 || data.score > 100) {\n    return fallback('score not an integer 0-100');\n  }\n  const list = (a) => (Array.isArray(a) ? a.map(String).slice(0, 6) : []);\n  return {\n    score: data.score,\n    matched_skills: list(data.matched_skills),\n    missing_skills: list(data.missing_skills),\n    seniority_fit: data.seniority_fit ?? 'unclear',\n    remote_or_local_ok: typeof data.remote_or_local_ok === 'boolean' ? data.remote_or_local_ok : null,\n    reason: String(data.reason ?? '').trim(),\n  };\n};\n\nreturn $input.all().map((item, idx) => {\n  const { claude_request, ...job } = jobs[idx]?.json ?? {};\n  const resp = item.json;\n  return { json: {\n    ...job,\n    ...parse(resp),\n    input_tokens: resp?.usage?.input_tokens ?? 0,\n    output_tokens: resp?.usage?.output_tokens ?? 0,\n  }};\n});"
+        "jsCode": "// Parse and validate each Claude response. One bad response never breaks the run:\n// it falls back to score = null with the reason recorded.\nconst jobs = $('Build Claude request').all();\n\nconst fallback = (why) => ({\n  score: null, matched_skills: [], missing_skills: [],\n  seniority_fit: 'unclear', remote_or_local_ok: null, reason: `parse error: ${why}`,\n});\n\nconst parse = (resp) => {\n  if (!resp || resp.error) {\n    const e = resp?.error;\n    return fallback(typeof e === 'string' ? e : (e?.message ?? 'request failed'));\n  }\n  if (resp.stop_reason === 'refusal') return fallback('model refused');\n  if (resp.stop_reason === 'max_tokens') return fallback('response cut off');\n  const text = (resp.content ?? []).find(b => b.type === 'text')?.text;\n  if (!text) return fallback('no text in response');\n  let data;\n  try {\n    data = JSON.parse(text.replace(/^\\s*```(?:json)?\\s*|\\s*```\\s*$/g, ''));\n  } catch (e) {\n    return fallback('invalid JSON');\n  }\n  if (!Number.isInteger(data.score) || data.score < 0 || data.score > 100) {\n    return fallback('score not an integer 0-100');\n  }\n  const list = (a) => (Array.isArray(a) ? a.map(String).slice(0, 6) : []);\n  return {\n    score: data.score,\n    matched_skills: list(data.matched_skills),\n    missing_skills: list(data.missing_skills),\n    seniority_fit: data.seniority_fit ?? 'unclear',\n    remote_or_local_ok: typeof data.remote_or_local_ok === 'boolean' ? data.remote_or_local_ok : null,\n    reason: String(data.reason ?? '').trim(),\n  };\n};\n\nreturn $input.all().map((item, idx) => {\n  const { claude_request, ...job } = jobs[idx]?.json ?? {};\n  const resp = item.json;\n  // Location caps are enforced here: the model may say \"capped\" and still score higher.\n  const parsed = parse(resp), cap = { 'probably too far': 45, 'too far': 35 }[job.location_verdict];\n  if (cap != null && parsed.score > cap) parsed.score = cap;\n  if (job.location_verdict) parsed.remote_or_local_ok = ['ok', 'possible'].includes(job.location_verdict);\n  return { json: {\n    ...job,\n    ...parsed,\n    input_tokens: resp?.usage?.input_tokens ?? 0,\n    output_tokens: resp?.usage?.output_tokens ?? 0,\n  }};\n});"
       },
       "id": "0b1c6c2e-1a01-4c55-9a10-000000000029",
       "name": "Parse score",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1328,
+        1776,
         -96
       ]
     },
@@ -163,7 +163,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2208,
+        2656,
         -96
       ]
     },
@@ -328,7 +328,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        2432,
+        2880,
         -96
       ],
       "retryOnFail": true,
@@ -350,7 +350,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2656,
+        3104,
         -96
       ]
     },
@@ -363,7 +363,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        2880,
+        3328,
         -96
       ]
     },
@@ -402,7 +402,7 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1552,
+        2000,
         -96
       ],
       "alwaysOutputData": true,
@@ -417,7 +417,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1776,
+        2224,
         -96
       ],
       "alwaysOutputData": true
@@ -440,11 +440,51 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2000,
+        2448,
         -96
       ],
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===== Location helpers (same code wherever a job's location is judged) =====\nconst geoKey = loc => String(loc ?? '').split(/[,(]/)[0].trim();\n// \"GU212JX\" or \"GL50\" -> outcode; anything else is a place name.\nconst outcodeOf = s => {\n  const t = s.toUpperCase().replace(/\\s+/g, '');\n  return /^([A-Z]{1,2}\\d[A-Z\\d]?)(\\d[A-Z]{2})$/.exec(t)?.[1] ?? (/^[A-Z]{1,2}\\d[A-Z\\d]?$/.test(t) ? t : null);\n};\nconst geoUrl = key => outcodeOf(key)\n  ? 'https://api.postcodes.io/outcodes/' + outcodeOf(key)\n  : 'https://api.postcodes.io/places?limit=5&q=' + encodeURIComponent(key);\nconst geoPoint = resp => {\n  const r = resp?.result;\n  const p = Array.isArray(r) ? ['City', 'Town', 'Suburban Area', 'Village'].map(t => r.find(x => x.local_type === t)).find(Boolean) : r;\n  return p && p.latitude != null ? { lat: Number(p.latitude), lon: Number(p.longitude) } : null;\n};\n// Straight-line miles.\nconst milesBetween = (a, b) => {\n  const rad = x => x * Math.PI / 180;\n  const h = Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lon - a.lon) / 2) ** 2;\n  return Math.round(2 * 3958.8 * Math.asin(Math.sqrt(h)));\n};\nconst isCountry = key => /^(|uk|united kingdom|england|scotland|wales|great britain|remote|nationwide|home.?based)$/i.test(key);\n// remote / remote offered / hybrid / on-site / unclear, from the words of the listing.\nconst workMode = job => {\n  const head = `${job.title ?? ''} | ${job.location ?? ''}`, text = `${head} | ${job.description ?? ''}`;\n  const strong = /\\b(fully|100%|completely|entirely|permanently)[ -]remote\\b|\\bremote[ -](first|only|based)\\b|\\bbased remotely\\b|\\bremote \\(?(uk|within the uk)\\b|\\b(location|working|work pattern)\\s*[:-]?\\s*(predominantly |mostly |mainly )?remote\\b|\\b(predominantly|mostly|mainly) remote\\b/i;\n  const start = String(job.description ?? '').slice(0, 200), offered = /\\/ ?remote working\\b|\\bremote (working|work) (is )?(available|possible|offered|considered)\\b/i;\n  if (/\\bremote\\b/i.test(head) && !/\\b(no|not) remote\\b/i.test(head) && !/hybrid/i.test(head)) return 'remote';\n  if (/\\(remote\\b[^)]*\\)/i.test(start)) return 'remote';\n  if (strong.test(text) && !/\\b(no|not) (fully|100%|completely) remote\\b/i.test(text)) return 'remote';\n  if (/\\bhybrid\\b(?![ -]?(cloud|infrastructure|environment|mobile|app|azure|identity|network|model of))/i.test(text) || /\\b(one|two|three|four|[1-4])(\\s*(-|to|–)\\s*[1-5])? days?( a| per| each)?( week)? ?(in|at|on|from)[ -](the |our )?(office|site|home)/i.test(text)) return 'hybrid';\n  if (offered.test(text)) return 'remote offered';\n  if (/\\b(on[- ]?site|office[- ]based|in[- ]office|in[- ]person)\\b/i.test(text) && !/\\bremote\\b/i.test(text)) return 'on-site';\n  return 'unclear';\n};\nconst locationVerdict = (mode, miles, c) => {\n  const hy = c.hybrid_miles, on = c.onsite_miles;\n  if (mode === 'remote') return 'ok';\n  if (mode === 'remote offered') return miles != null && miles <= on ? 'ok' : 'possible';\n  if (miles == null) return 'unknown';\n  if (miles > hy) return mode === 'unclear' ? 'probably too far' : 'too far';\n  if (mode === 'hybrid' || miles <= on) return 'ok';\n  return mode === 'on-site' ? 'too far' : 'possible';\n};\n// The place lookup covers Great Britain only.\nconst NI = { lat: 54.6, lon: -5.93 };\nconst locate = (job, point, c) => {\n  if (!point && /northern ireland|\\bbelfast\\b|\\bcounty antrim\\b/i.test(job.location ?? '')) point = NI;\n  const miles = point ? milesBetween(c.home, point) : null, mode = workMode(job);\n  return { work_mode: mode, miles, location_verdict: locationVerdict(mode, miles, c) };\n};\n// ===== End of location helpers =====\nconst key = geoKey($('Validate input').first().json.location);\nreturn [{ json: { url: isCountry(key) ? '' : geoUrl(key) } }];"
+      },
+      "id": "c52e8f10-lo00-4a3d-8b77-b00000000001",
+      "name": "Place to look up",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url || 'https://api.postcodes.io/places?q=' }}",
+        "options": {
+          "timeout": 15000,
+          "batching": {
+            "batch": {
+              "batchSize": 5,
+              "batchInterval": 500
+            }
+          }
+        }
+      },
+      "id": "c52e8f10-lo00-4a3d-8b77-b00000000002",
+      "name": "Look up place",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1104,
+        -96
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
     }
   ],
   "connections": {
@@ -485,7 +525,7 @@
       "main": [
         [
           {
-            "node": "Build Claude request",
+            "node": "Place to look up",
             "type": "main",
             "index": 0
           }
@@ -592,6 +632,28 @@
         [
           {
             "node": "Prepare sheet rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Place to look up": {
+      "main": [
+        [
+          {
+            "node": "Look up place",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Look up place": {
+      "main": [
+        [
+          {
+            "node": "Build Claude request",
             "type": "main",
             "index": 0
           }

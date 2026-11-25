@@ -17,14 +17,14 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    S[Schedule 11:30] --> CFG[Search config]
+    S[Schedule 10:30] --> CFG[Search config]
     CFG --> AQ[Build Adzuna queries] --> AZ[Adzuna API] --> AN[Normalise Adzuna jobs]
     CFG --> RQ[Build Reed queries] --> RD[Reed API] --> RN[Normalise Reed jobs]
     AN & RN --> M[Combine sources] --> CS[Check sources: fail only if all are down]
     CS --> D1[Remove duplicates in run: title + company]
     D1 --> RE[Read existing jobs] --> D2[Keep only new jobs: id or title + company]
-    D2 --> F[Drop obvious mismatches] --> CAP[Cap 40 jobs]
-    CAP --> SC[Score with Claude] --> P[Parse + validate JSON]
+    D2 --> F[Drop obvious mismatches] --> GEO[postcodes.io: distance, remote or hybrid check] --> CAP[Rank, keep best 50]
+    CAP --> FT[Reed details API: full text] --> SC[Score with Claude] --> P[Parse + validate JSON]
     P --> GS[(Append to sheet, RAW)]
     GS --> CC[CV candidates: this run + older rows without a CV]
     CC --> GEN[[Generate CVs: workflow D]]
