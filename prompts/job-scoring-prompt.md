@@ -81,8 +81,7 @@ Delivery: end-to-end project ownership, requirements and process analysis, choos
 software, technical documentation for non-technical users, managing contractors.
 Other: Unreal Engine 5, Godot, small-business finance and payroll.
 
-NOT LEARNED (missing only if the job asks for it): Make, Zapier, Power Automate, Power Platform, Power BI, Azure, ASP.NET,
-CI/CD, Microsoft 365 Copilot, Copilot Studio, Python, MCP / AI agents with tool calling, Kubernetes, GitHub Copilot.
+NOT LEARNED (missing only if the job asks for it): <tools you have not used yet>.
 
 EXPERIENCE
 - Commercial: junior full-stack developer in C#/.NET on workforce management software (5 months, 2020), a

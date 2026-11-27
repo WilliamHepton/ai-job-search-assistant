@@ -9,7 +9,10 @@ const root = path.join(__dirname, '..');
 const wf = JSON.parse(fs.readFileSync(path.join(root, 'workflows/tailored-cv.json'), 'utf8'));
 const nodeCode = name => wf.nodes.find(n => n.name === name).parameters.jsCode;
 const config = JSON.parse(wf.nodes.find(n => n.name === 'CV config').parameters.jsonOutput);
-const profileMd = fs.readFileSync(path.join(root, 'examples/about-me.example.md'), 'utf8');
+// The example's "not yet learned" list is a placeholder; the test uses its own list.
+const TEST_NOT_LEARNED = 'Make, Zapier, Power Automate, Azure, Python, MCP / AI agents with tool calling, Kubernetes';
+const profileMd = fs.readFileSync(path.join(root, 'examples/about-me.example.md'), 'utf8')
+  .replace(/^(\*\*Not yet learned[^*]*\*\*\s*).+$/m, (_, h) => h + TEST_NOT_LEARNED);
 const template = fs.readFileSync(path.join(root, 'templates/cv-template.html'), 'utf8');
 
 // Minimal stand-ins for n8n's Code node globals.
@@ -105,7 +108,7 @@ const runNode = async (code, ctx) => {
   assert.equal(group('Tools and DevOps'), 'Git/GitHub, Docker');
   const order = cv2.skills.map(s => profile.skills.findIndex(k => k.group === s.group)).filter(i => i >= 0);
   assert.deepEqual(order, [...order].sort((a, b) => a - b), 'skill groups in the profile order');
-  assert.ok(group('Automation and integration').startsWith('workflow automation in n8n (same model as Power Automate'), 'fixed n8n wording');
+  assert.ok(group('Integration and automation').startsWith('workflow automation in n8n (same model as Power Automate'), 'fixed n8n wording');
   assert.equal(html2.split('Power Automate').length, 2, 'Power Automate only inside the fixed wording');
   assert.ok(!html2.includes('Azure') || !profile.notLearned.includes('Azure'), 'Azure blocked when it is on the not-learned list');
   assert.ok(!html2.includes('Angular'), 'tech the cited fact does not name is removed');

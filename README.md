@@ -1,14 +1,10 @@
 # AI Job-Search Assistant
 
-> A set of n8n workflows that find, score and email me the best-matching AI automation jobs every day, and write a **tailored CV for every good match**, cutting my daily search from **X** to **Y** minutes.
-
-🚧 **Work in progress.** Sections marked _TODO_ are filled in as the build progresses.
-
-<!-- TODO: demo video link + 2 screenshots (workflow canvas, digest email) -->
+> A set of n8n workflows that find, score and email me the best-matching software jobs every day, and write a **tailored CV** and a **job brief** for every good match.
 
 ## The problem
 
-Job hunting by hand means opening several job sites every day, skimming dozens of listings, judging each one against my skills, copying the good ones into a list and then rewriting my CV for each application. _TODO: measured minutes per day (see [docs/process-analysis.md](docs/process-analysis.md))._
+Job hunting by hand means opening several job sites every day, skimming dozens of listings, judging each one against my skills, copying the good ones into a list and then rewriting my CV for each application.
 
 ## How it works
 
@@ -39,7 +35,7 @@ An LLM writing CVs freely will sooner or later claim a skill I don't have. So he
 - **A validator checks every line** before anything is printed:
   - Each bullet must cite a real fact ID **from the same role**. Unknown IDs, `TODO` lines and "interviews only" facts are dropped.
   - Skills must be items from the matching skill line in the profile.
-  - No "not yet learned" term (Python, Zapier, MCP…) may appear anywhere. Common words such as "Make" are only matched with the exact capitalisation.
+  - No term from the profile's "not yet learned" list may appear anywhere. Everyday words on the list are only matched with the exact capitalisation.
   - A reworded bullet may not add a **number** the original doesn't contain, and may not grow much longer. If it fails, the original wording is used.
   - The headline must start "Software Developer |" and use only words from the headline options or the job title.
   - A bullet may not name a technology its own fact does not name. A last check reports any skill on the CV that is not in the profile.
@@ -102,12 +98,6 @@ Listings often disappear before the interview, so each job with a CV also gets a
 | Same CV on Sonnet 5.5 (tested, very similar quality) | ~$0.04 |
 | Job brief, per job (Haiku 5.5) | ~$0.002 |
 | A typical day (40 jobs scored, 4 CVs and briefs) | ~$0.03 |
-
-_TODO: measured monthly cost after the 7-day run._
-
-## Results
-
-_TODO: before/after minutes per day, jobs reviewed per day, cost per month._
 
 ## Setup
 
